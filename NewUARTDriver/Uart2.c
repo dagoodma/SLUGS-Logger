@@ -1,11 +1,24 @@
 #include <xc.h>
 #include "Uart2.h"
 
-unsigned int BufferA[UART2_BUFFER_SIZE] __attribute__((space(dma)));
-unsigned int BufferB[UART2_BUFFER_SIZE] __attribute__((space(dma)));
+unsigned char BufferA[UART2_BUFFER_SIZE] __attribute__((space(dma)));
+unsigned char BufferB[UART2_BUFFER_SIZE] __attribute__((space(dma)));
 
-void Uart2Init(void)
-{
+void (*InterruptCallback)(unsigned char *, int);
+
+/**
+ * Initializes the UART2 and DMA0.
+ * UART recieves 1 stop bit,  8 data bits, no parity. Assumes 112500 baud rate.
+ * DMA puts data recived into two buffers (ping-pong) and interrupts when one is
+ * full.
+ * @param Callback
+ * A user-defined function. It is called when the DMA has filled up a ping-pong
+ * buffer. First argument is a pointer the the buffer. Second is buffer size (int).
+ */
+void Uart2Init(void (*Callback)(unsigned char *, int))
+{ // Just sit and spin with this. It's all with interrupts. (see lower)
+	InterruptCallback = Callback;
+
 	U2MODEbits.STSEL = 0; // 1-stop bit
 	U2MODEbits.PDSEL = 0; // No Parity, 8-data bits
 	U2MODEbits.ABAUD = 0; // Auto-Baud Disabled
@@ -23,8 +36,8 @@ void Uart2Init(void)
 	U2STAbits.UTXEN = 1; // Enable UART Tx
 
 	// Set Up DMA Channel 0 to Transmit in Continuous, Ping-Pong Mode:
-	DMA0CON = 0x0002; // Continuous, Post-Increment, Peripheral-to-RAM, Ping-Pong
-	DMA0CNT = UART2_BUFFER_SIZE-1; // 8 DMA requests
+	DMA0CON = 0x4002; // Continuous, Post-Increment, Peripheral-to-RAM, Ping-Pong
+	DMA0CNT = UART2_BUFFER_SIZE-1; // DMA requests before Interrupting
 	DMA0REQ = 0x001E; // Select UART2 Reciever
 
 	DMA0PAD = (volatile unsigned int) &U2RXREG;
@@ -37,39 +50,33 @@ void Uart2Init(void)
 	DMA0CONbits.CHEN = 1; // Enable DMA Channel
 }
 
+/**
+ * Sends a single character over the UART2 peripheral. Meant to be used for
+ * debugging.
+ * @param in
+ * An ASCII character to send. Really, this could be any byte data.
+ */
 void Uart2PrintChar(char in)
 {
 	while(U2STAbits.UTXBF); // wait for a space in the buffer
 	U2TXREG = in;
 }
 
-void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
-{ // Won't interrupt with current settings! Reading from U2RXREG and using DMA with UART creates problems
-	char x = U2RXREG; // Read UxRXREG only once per interrupt!
-	U2TXREG = x; // echo
 
-	// If there was an overun error clear it and continue
-	if (U2STAbits.OERR == 1) {
-		U2STAbits.OERR = 0;
+/**
+ * DMA0 Interrupt.
+ * Calls the user-defined callback function with the correct buffer pointer.
+ */
+void __attribute__((__interrupt__, __auto_psv__)) _DMA0Interrupt(void)
+{	
+	static unsigned int CurrentBuffer = 0;
+	if(!CurrentBuffer) {
+		InterruptCallback(BufferA, UART2_BUFFER_SIZE);
 	}
-
-	// display on LEDs
-	TRISA = 0;
-	PORTA = x;
-
-	// clear the interrupt
-	IFS1bits.U2RXIF = 0;
-}
-
-void __attribute__((__interrupt__)) _DMA0Interrupt(void)
-{	// When one buffer has been filled
-	// Print both buffers
-	int i;
-	for (i = 0; i<UART2_BUFFER_SIZE; i++) {
-		Uart2PrintChar(BufferA[i]);
+	else
+	{
+		InterruptCallback(BufferB, UART2_BUFFER_SIZE);
 	}
-	for (i = 0; i<UART2_BUFFER_SIZE; i++) {
-		Uart2PrintChar(BufferB[i]);
-	}
+	CurrentBuffer ^= 1; //
 	IFS0bits.DMA0IF = 0; // Clear the DMA0 Interrupt Flag
 }

@@ -14,10 +14,12 @@ _FOSCSEL(FNOSC_FRC);
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
 _FWDT(FWDTEN_OFF);
 
+void InterruptRoutine(unsigned char *Buffer, int BufferSize);
+
 /*
  * 
  */
-void main(void)
+int main(void)
 {
 	// Watchdog Timer Enabled/disabled by user software
 	// (LPRC can be disabled by clearing SWDTEN bit in RCON registe
@@ -41,10 +43,20 @@ void main(void)
 	while (OSCCONbits.LOCK != 1) {
 	}; /* Wait for PLL to lock*/
 
-	Uart2Init();
+	Uart2Init(InterruptRoutine);
 
 	TRISA = 0x0;
 	PORTA = 0x01;
 
 	while (1);
+}
+
+void InterruptRoutine(unsigned char *Buffer, int BufferSize)
+{
+	// When one buffer has been filled
+	// Print both buffers (sorta echo)
+	int i;
+	for (i = 0; i<BufferSize; i++) {
+		Uart2PrintChar(Buffer[i]);
+	}
 }

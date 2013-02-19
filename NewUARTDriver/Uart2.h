@@ -9,14 +9,14 @@
 #define	UART2_H
 
 #ifndef UART2_BUFFER_SIZE
-#define UART2_BUFFER_SIZE 8
+#define UART2_BUFFER_SIZE 8 // the size of an individual ping-ping buffer
 #endif
 
 #define FCY 40000000 // assumes 40Mhz freq
 #define BAUDRATE 115200 // assumes 115200 baud rate
 #define BRGVAL ((FCY/BAUDRATE)/16)-1 // used in Uart2Init()
 
-void Uart2Init(void); // initializes UART and DMA to a ping-pong buffer
+void Uart2Init(void (*Callback)(unsigned char *, int)); // initializes UART and DMA to a ping-pong buffer
 
 void Uart2PrintChar(char in); // sends a character with UART2
 
