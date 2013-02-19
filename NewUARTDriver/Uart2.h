@@ -8,20 +8,16 @@
 #ifndef UART2_H
 #define	UART2_H
 
-#ifdef	__cplusplus
-extern "C" {
+#ifndef UART2_BUFFER_SIZE
+#define UART2_BUFFER_SIZE 8
 #endif
 
+#define FCY 40000000 // assumes 40Mhz freq
+#define BAUDRATE 115200 // assumes 115200 baud rate
+#define BRGVAL ((FCY/BAUDRATE)/16)-1 // used in Uart2Init()
 
+void Uart2Init(void); // initializes UART and DMA to a ping-pong buffer
 
-
-#ifdef	__cplusplus
-}
-#endif
+void Uart2PrintChar(char in); // sends a character with UART2
 
 #endif	/* UART2_H */
-
-
-#define FCY 40000000
-#define BAUDRATE 115200
-#define BRGVAL ((FCY/BAUDRATE)/16)-1
