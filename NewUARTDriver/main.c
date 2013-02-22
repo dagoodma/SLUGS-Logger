@@ -4,11 +4,12 @@
  *
  * Created on February 12, 2013, 11:17 AM
  */
+#define UART2_BUFFER_SIZE 512
 
 #include <xc.h>
 #include "Uart2.h"
-
-#define UART2_BUFFER_SIZE 8
+#include <stddef.h>
+#include "FSIO.h"
 
 _FOSCSEL(FNOSC_FRC);
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
@@ -45,10 +46,18 @@ int main(void)
 
     Uart2Init(InterruptRoutine);
 
-    TRISA = 0x0;
-    PORTA = 0x01;
+    while (!MDD_MediaDetect());
+    while (!FSInit());
+    char filename[] = "Hey.txt";
+    FSFILE * pointer=NULL;
+    while(pointer==NULL)
+   {
+   		pointer = FSfopen (filename, "w");
+   }
 
-    while (1);
+    while (1){
+        Service_Spi(pointer);
+    }
 }
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize)
@@ -59,4 +68,5 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize)
     for (i = 0; i < BufferSize; i++) {
         Uart2PrintChar(Buffer[i]);
     }
+    OFB_set(Buffer);
 }

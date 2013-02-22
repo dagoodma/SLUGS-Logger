@@ -35,13 +35,13 @@
  *
 *****************************************************************************/
 
-#include "MDD File System\FSIO.h"
-#include "MDD File System\FSDefs.h"
-#include "MDD File System\SD-SPI.h"
+#include "MDD File System/FSIO.h"
+#include "MDD File System/FSDefs.h"
+#include "MDD File System/SD-SPI.h"
 #include "string.h"
-#include "MDD File System\FSConfig.h"
-#include "MDD File System\HardwareProfile.h"
-#include "p33FJ256GP710.h"
+#include "MDD File System/FSConfig.h"
+#include "MDD File System/HardwareProfile.h"
+#include <xc.h>
 
 /******************************************************************************
  * Global Variables

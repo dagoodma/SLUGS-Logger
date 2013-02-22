@@ -1,11 +1,10 @@
-#include "p33FJ256GP710.h"
+#include "xc.h"
 //#include "apDefinitions.h"
 //#include "MultiCircBuffer.h"
-#include "FSIO.h"
-#include "uart2.h"
+#include "MDD File System/FSIO.h"
 #include "stdio.h"
 #include "loggerDefinitions.h"
-#include "overflowBuffer.h"
+#include "OFBProxy.h"
 
 
 #define BUFFERSIZE 512
@@ -16,9 +15,6 @@
 	static char need_buffer;
 	static int need_write;
 	//FSFILE * pointer;
-	
-
-//#endif
 
 void Init_Data_Logger(int id)
 {
@@ -67,15 +63,8 @@ void Service_Spi(FSFILE *fo)
 		}	
 		if (OFB_getSize()!=0)//if (need_write==1)
 		{
-			#ifdef __DEBUG
-				//printf("err: %d\t%lu\t%d\r\n",error,CurrentSector,totalerr);
-				//printf("modulo Result: %lu\r\n",(CurrentSector-first_sector)%CHEW_FAT_SIZE);
-			#endif
 			if(sector_count>=NINETY_PER_CHEW_FAT_SIZE_IN_SECTORS)
 			{
-				#ifdef __DEBUG
-					//printf("Allocating file: %lu\r\n",CurrentSector);
-				#endif
 				IncreaseSize=TRUE;
 				sector_count=1;
 				if (CurrentSector==0)
@@ -89,9 +78,6 @@ void Service_Spi(FSFILE *fo)
 			if(card_initerr!=TRUE)
 			{
 				card_initerr=MDD_SDSPI_MediaInitialize();
-				#ifdef __DEBUG
-					printf("e\r\n");
-				#endif
 				need_write=TRUE;
 				return;
 			}
@@ -105,23 +91,12 @@ void Service_Spi(FSFILE *fo)
 				if(error==TRUE)
 				{
 					//if it succeeds pop sector off buffer and advance
-					OFB_pop();
-					#ifdef __DEBUG
-						int temp=OFB_getSize();
-						if(temp>maxbuffersize)
-						{
-							maxbuffersize=temp;
-							printf("Max Buffer Size: %d\r\n",maxbuffersize);
-						}	
-					#endif					
+					OFB_pop();				
 					CurrentSector++;
 					sector_count++;
 					if(OFB_getSize()==0)
 					{
 						need_write=0;
-						#ifdef __DEBUG
-							//printf("Over Flow Buffer is Empty\r\n");
-						#endif
 					}	
 					return;
 				}
@@ -129,11 +104,6 @@ void Service_Spi(FSFILE *fo)
 				{
 					//if error has again occured try to init card again
 					card_initerr=MDD_SDSPI_MediaInitialize();
-					#ifdef __DEBUG
-						UART2PutChar('e');
-						UART2PutChar('\r');
-						UART2PutChar('\n');
-					#endif
 				}				
 			}
 		}

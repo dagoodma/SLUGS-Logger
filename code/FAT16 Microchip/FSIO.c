@@ -47,7 +47,7 @@
 #include "ctype.h"
 #include "FSconfig.h"
 #include "FSDefs.h"
-#include "p33Fj256GP710.h"
+#include <xc.h>
 
 #ifdef ALLOW_FSFPRINTF
 #include "stdarg.h"
