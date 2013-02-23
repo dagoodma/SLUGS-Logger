@@ -10,6 +10,7 @@
 #include "Uart2.h"
 #include <stddef.h>
 #include "FSIO.h"
+#include "NewSDWrite.h"
 
 _FOSCSEL(FNOSC_FRC);
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
@@ -46,21 +47,12 @@ int main(void)
 
     Uart2Init(InterruptRoutine);
 
-    while (!MDD_MediaDetect());
-    while (!FSInit());
-    char filename[] = "Hey.txt";
-    FSFILE * pointer=NULL;
-    while(pointer==NULL)
-   {
-   		pointer = FSfopen (filename, "w");
-   }
+    NewSDWrite();
 
-    while (1){
-        Service_Spi(pointer);
-    }
+    while(1);
 }
 
-void InterruptRoutine(unsigned char *Buffer, int BufferSize)
+void InterruptRoutine(unsigned char *Buffer, int BufferSize) // not used currently
 {
     // When one buffer has been filled
     // Print both buffers (sorta echo)
