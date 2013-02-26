@@ -4,6 +4,7 @@
 
 /**
  * Connects to the SD card, resets FAT, attempts to write.
+ *
  */
 void NewSDWrite() {
     static DWORD CurrentSector = 0;
@@ -11,13 +12,12 @@ void NewSDWrite() {
     while (!FSInit());
     char filename[] = "Yay.txt";
     FSFILE * pointer = NULL;
+    
+    MDD_SDSPI_MediaInitialize();    // conect to sd card
+    long int serialNumber = 0;      // specific serial # doesn't matter
     while (pointer == NULL) {
-        pointer = FSfopen(filename, "w"); // #FOR TUESDAY: might want to do this after reset
+        pointer = FSfopen(filename, "w"); // open a file
     }
-    MDD_SDSPI_MediaInitialize();
-    long int serialNumber = 0;
-    char * volumeID = "Nice";
-    FSformat (1, serialNumber, volumeID); // Unmodified format func. Resets FAT
 
     unsigned char outbuf[512]; // generate some data
     unsigned int i;
@@ -25,18 +25,8 @@ void NewSDWrite() {
         outbuf[i] = i % 26 + 'A';
     }
 
-    if(FSfwrite(outbuf, 512, 1, pointer) != 1){ // Unmodified write-file function
+    if(FSfwrite(outbuf, 512, 1, pointer) != 1){ // "write" to the file, check if it worked
         while(1);
     }
-    
-    //FILEallocate_multiple_clusters(pointer, 1); // CHEW_FAT_SIZE_IN_SECTORS
-
-//    CurrentSector = get_First_Sector(pointer);
-    
-//    BYTE error;
-//    for (i = 0; i < 1000; i++) {
-//        error = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, 0);
-//        if(error) break;
-//    }
-//    while (error == FALSE);
+    FSfclose(pointer); // File "wrote" successfully. This function actually puts the data on the sd card
 }
