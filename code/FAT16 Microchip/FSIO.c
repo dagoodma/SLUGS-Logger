@@ -8784,12 +8784,6 @@ void allocate_size(DWORD size, FSFILE *stream, BOOL all) {
     //printf("size of file: %d\r\n",(int)stream->size);
 }
 
-void do_stuff(FSFILE *stream) {
-    //stream->size=size;
-
-    //printf("size of disk: %u%u\r\n",(unsigned int)(stream->dsk->maxcls>>16),(unsigned int)(stream->dsk->maxcls<<16));
-}
-
 DWORD get_First_Sector(FSFILE *stream) {
     DWORD Sector;
     Sector = Cluster2Sector(stream->dsk, stream->cluster) + stream->sec;
@@ -8852,129 +8846,73 @@ BYTE FAT_print_cluster_chain(DWORD cluster, DISK * dsk) {
 
 BYTE FILEallocate_multiple_clusters(FSFILE *fo, DWORD num_sectors) {
 
-    //printf("hi starting the process\r\n");
+    static int notFirst = 0; // used to check if this is being run the first time
+    DISK * dsk = fo->dsk; // DISK contains info about the device
+    DWORD c, curcls, num_clusters, temp; // 32-bit unsigned
 
-    static int first = 0;
-    DISK * dsk;
-    DWORD c, curcls, num_clusters, temp;
-    dsk = fo->dsk;
-
-    //need the numbers of sectors per cluster as they change in larger cards
+    // Calculate the necessary clusters to allocate to hold this many sectors.
     curcls = dsk->SecPerClus;
-    //printf("Sectors Per Cluster: %lu\r\n",curcls);
-
-    //number of clusters needed as that is the smalles size possible to allocate
     num_clusters = num_sectors / curcls;
-    //printf("num_clusters: %lu\r\n",num_clusters);
-    //c = fo->ccls;
-    //printf("Current Cluster: %lu\r\nFirstCluster: %lu\r\n",c,fo->cluster);
-#ifdef __DEBUG
-    //FAT_print_cluster_chain(fo->cluster,dsk);
-#endif
-    // find the next empty cluster
 
-    //this finds the first free sector, eventually it needs to find the largest contiguos space
-
-    // if (c == 0)      // "0" is just an indication as Disk full in the fn "FATfindEmptyCluster()"
-    // return CE_DISK_FULL;
-    //else
-    //{
-
-
-    //last cluster is then overwritten with last cluster_tag
-
-    if (first != 0) {
+    // If this isn't the first run, start from the next sequential cluster.
+    if (notFirst) {
         c = fo->ccls + 1;
-#ifdef __DEBUG
-        //printf("Sector Found: %lu\r\n",c);
-#endif
+    }
+    // But if this is the first run, find the first free cluster and start from
+    // there.
+    else {
+        c = FATfindEmptyCluster(fo); // c is the next empty cluser
+    }
 
-        DWORD count_clust;
-        //loops through the required number of clusters linking them together
-        for (count_clust = c; count_clust < (c + num_clusters); count_clust++) {
-            //printf("Cluster Allocated: %lu\r\n",count_clust);
-            WriteFAT(dsk, count_clust, count_clust + 1, FALSE);
-        }
-        //printf("count_clust: %lu\r\n",count_clust);
-        count_clust--; //subtract one off to be at last cluster
-        WriteFAT(dsk, count_clust, LAST_CLUSTER_FAT32, FALSE);
-        WriteFAT(dsk, 0, 0, TRUE);
+    // Creates a chain of clusters specified by the `num_sectors` argument and
+    // links them all together in the FAT.
+    DWORD count_clust;
+    for (count_clust = c; count_clust < (c + num_clusters); count_clust++) {
+        WriteFAT(dsk, count_clust, count_clust + 1, FALSE);
+    }
+
+    // Set the last cluster in the chain to be that in the FAT and update the
+    // FAT.
+    count_clust--;
+    WriteFAT(dsk, count_clust, LAST_CLUSTER_FAT32, FALSE);
+    WriteFAT(dsk, 0, 0, TRUE);
+
+    // If this is not the first run, link up the existing chain to the new set.
+    // Also set the current cluster for this file to the start of the newl
+    if (notFirst) {
         WriteFAT(dsk, fo->ccls, c, FALSE);
         WriteFAT(dsk, 0, 0, TRUE);
-        fo->ccls = count_clust;
-        //last_clust=count_clust;
-#ifdef __DEBUG
-        printf("After first time\r\n");
-#endif
+        fo->ccls = c;
     }
+    // Otherwise if this is the first run, find us a cluster to start with and
+    // build the chain from there.
     else {
-        c = FATfindEmptyCluster(fo);
-        DWORD count_clust;
-        //loops through the required number of clusters linking them together
-        for (count_clust = c; count_clust < (c + num_clusters); count_clust++) {
-            // printf("Cluster Allocated: %lu\r\n",count_clust);
-            WriteFAT(dsk, count_clust, count_clust + 1, FALSE);
-        }
-        //printf("count_clust: %lu\r\n",count_clust);
-        count_clust--;
-        WriteFAT(dsk, count_clust, LAST_CLUSTER_FAT32, FALSE);
-        WriteFAT(dsk, 0, 0, TRUE);
-        FILEget_next_cluster(fo, 20);
-        curcls = fo->ccls;
-        WriteFAT(dsk, curcls, 0, FALSE);
-        //WriteFAT(dsk,0,0,TRUE);
-        fo->cluster = c;
-        fo->ccls = count_clust;
-        first++;
-        //curcls=c;
-        //WriteFAT(dsk,curcls,c,FALSE);
-        //temp=ReadFAT(dsk,curcls);
-        //last_clust=count_clust;
-        //printf("Current Cluster: %lu\r\nFirstCluster: %lu\r\nhmm: %lu\r\n",c,fo->cluster,temp);
-#ifdef __DEBUG
-        //printf("in first time\r\n");
-#endif
+        FILEget_next_cluster(fo, 20); // ???
+        curcls = fo->ccls; // ???
+        WriteFAT(dsk, curcls, 0, FALSE); // ???
+        WriteFAT(dsk,0,0,TRUE); // ???
+        fo->cluster = c; // update cluster pointer
+        fo->ccls = count_clust; // update cluser count
+        notFirst = 1;
     }
-    //curcls=fo->cluster;
-    //WriteFAT( dsk, curcls, c, FALSE);
-    //printf("file size: %lu\r\n",fo->size);
+
+    // Update the file as having a larger size and of being written.
     fo->size = fo->size + num_sectors * 512;
+    fo->flags.write = TRUE;
+
+    // Update the global WriteNeeded variable that Microchip's library uses. Used
+    // internally by various functions to determine if they should write pending
+    // data.
     gNeedFATWrite = TRUE;
-    fo->flags.write = TRUE;
-    int err;
-    _LATA6 = 1;
-    err = FSfclose(fo);
 
-    _LATA6 = 0;
-    fo->flags.write = TRUE;
-    //printf("FSfclose error: %d\r\n",err);
+    // Close this file. Flushes its contents to the SD card.
+    int err = FSfclose(fo);
+
+    // Force a write of any pending FAT updates.
     WriteFAT(dsk, 0, 0, TRUE);
-    //FAT_print_cluster_chain(fo->cluster,dsk);
-    //fo=FSfopen("WRITE.TXT","r");
 
-    //FAT_print_cluster_chain(fo->cluster,dsk);
-    //FAT_print_cluster_chain(c,dsk);
-    //#ifdef __DEBUG
-    //	printf("file size: %lu\r\n",fo->size);
-    //#endif
-
-    //}
-    return CE_GOOD;
-    // link current cluster to the new one
-    curcls = fo->ccls;
-
-    WriteFAT(dsk, curcls, c, FALSE);
-
-    // update the FILE structure
-    fo->ccls = c;
-    //fo->size=size;
-    // IF this is a dir, we need to erase the cluster
-    // If it's a file, we can leave it- the file size
-    // will limit the data we see to the data that's been
-    // written
-    return CE_GOOD;
-
-} // allocate new cluster
+    return CE_GOOD; // return no error
+}
 
 
 
