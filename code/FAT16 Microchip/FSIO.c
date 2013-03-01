@@ -8784,9 +8784,9 @@ void allocate_size(DWORD size, FSFILE *stream, BOOL all) {
     //printf("size of file: %d\r\n",(int)stream->size);
 }
 
-DWORD get_First_Sector(FSFILE *stream) {
+DWORD FILEget_true_sector(FSFILE *stream) {
     DWORD Sector;
-    Sector = Cluster2Sector(stream->dsk, stream->cluster) + stream->sec;
+    Sector = Cluster2Sector(stream->dsk, stream->ccls) + stream->sec;
     //printf("first Cluster: %d\r\nCurrent Sector: %d",(int)Sector,(int)stream->sec);
     return Sector;
 }

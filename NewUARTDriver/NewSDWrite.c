@@ -5,10 +5,14 @@
 #include <math.h>
 
 // this cannot be greater than the number of sectors in a cluster
-#define TOTAL_SECTORS 130
+#define TOTAL_SECTORS 80L
+#define BYTES_PER_SECTOR 512L
 
 int allocate_multiple_clusters(FSFILE*, DWORD);
 BYTE FILEallocate_new_cluster(FSFILE *fo, BYTE mode);
+DWORD FILEget_true_sector(FSFILE *);
+DWORD ReadFAT (DISK *, DWORD);
+DWORD Cluster2Sector(DISK *, DWORD);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 
@@ -18,45 +22,72 @@ extern BYTE gNeedDataWrite;
  */
 void NewSDWrite()
 {
-    static DWORD CurrentSector = 0;
+    DWORD CurrentSector = 0;
+    DWORD SectorLimit = 0;
+    DWORD clusterTracker[TOTAL_SECTORS] = {}; // debug
+    DWORD sectorTracker[TOTAL_SECTORS] = {}; // debug
     while (!MDD_MediaDetect());
     while (!FSInit());
-    char filename[] = "Two.txt";
+    char filename[] = "Three.txt";
     FSFILE * pointer = NULL;
 
     MDD_SDSPI_MediaInitialize(); // conect to sd card
-    long int serialNumber = 0; // specific serial # doesn't matter
     while (pointer == NULL) {
         pointer = FSfopen(filename, "w"); // open a file
     }
 
-    unsigned char outbuf[TOTAL_SECTORS * 512]; // generate some data
-    unsigned int i;
-    for (i = 0; i < TOTAL_SECTORS * 512; i++) {
+    unsigned char outbuf[BYTES_PER_SECTOR]; // generate some data
+    unsigned long i;
+    for (i = 0; i < BYTES_PER_SECTOR; i++) {
         outbuf[i] = i % 26 + 'a';
     }
 
     DWORD num_clusters = ceilf(TOTAL_SECTORS / (float)pointer->dsk->SecPerClus);
+
+    // Chain together the clusters we need
     allocate_multiple_clusters(pointer, num_clusters);
-    CurrentSector = get_First_Sector(pointer);
+
+    // Set the current cluster and sector to the first cluster of the file.
+    //  #Problem: this will overwrite a file that's already written
+    pointer->ccls = pointer->cluster;
+    CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls);
+    SectorLimit = CurrentSector + pointer->dsk->SecPerClus;
+
+    // For each sector we want to write...
     for (i = 0; i < TOTAL_SECTORS; i++) {
-        int success = MDD_SDSPI_SectorWrite(CurrentSector++, &outbuf[i * 512], 0);
-        if (!success) {
+        // Write the data
+        int success = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, 0);
+        sectorTracker[i] = CurrentSector; // debug
+        clusterTracker[i] = pointer->ccls; // debug
+        if (!success) { // debug
             while (1);
+        }
+
+        // Check to see if we need to go to a new cluster;
+        //  otherwise, next cluster
+        if (CurrentSector == SectorLimit - 1) {
+            // Set cluster and sector to next cluster in out chain
+            pointer->ccls = ReadFAT(pointer->dsk, pointer->ccls);
+            pointer->sec = 0;
+            CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls);
+            SectorLimit = CurrentSector + pointer->dsk->SecPerClus;
+        } else {
+            CurrentSector++;
         }
     }
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;
     // save off the positon
-    pointer->pos = 512;
+    pointer->pos = BYTES_PER_SECTOR-1; // current position in sector (bytes)
 
     // save off the seek
-    pointer->seek = TOTAL_SECTORS * 512;
+    pointer->seek = TOTAL_SECTORS * BYTES_PER_SECTOR; // current position in file (bytes)
 
     // now the new size
-    pointer->size = TOTAL_SECTORS * 512;
-    pointer->sec = TOTAL_SECTORS - 1;
+    //  #Problem: This might not be accurate
+    pointer->size = TOTAL_SECTORS * BYTES_PER_SECTOR; // size of file (bytes)
     FSfclose(pointer);
+    int thelast = 1; // debug
 }
 
 /**
@@ -75,3 +106,14 @@ int allocate_multiple_clusters(FSFILE* fo, DWORD num_clusters)
     }
     return num_clusters;
 }
+
+/**
+ * Correct the sector and cluster data for a file to be valid numbers.
+ * @param fo The file to normalize
+ */
+void normalize_file_data(FSFILE* fo)
+{
+    fo->ccls += fo->sec / fo->dsk->SecPerClus;  // The current cluster of the file
+    fo->sec = fo->sec%fo->dsk->SecPerClus;      // The current sector in the current cluster of the file
+}
+

@@ -49,7 +49,7 @@ void Service_Spi(FSFILE *fo) {
         FILEallocate_multiple_clusters(fo, CHEW_FAT_SIZE_IN_SECTORS);
         sector_count = 1;
         if (CurrentSector == 0) {
-            CurrentSector = get_First_Sector(fo);
+            //CurrentSector = get_First_Sector(fo); #commented out
         }
 
     }
@@ -59,7 +59,7 @@ void Service_Spi(FSFILE *fo) {
             IncreaseSize = TRUE;
             sector_count = 1;
             if (CurrentSector == 0) {
-                CurrentSector = get_First_Sector(fo);
+                //CurrentSector = get_First_Sector(fo);
             }
         }
         //if there is an error from writing to the card or the last card

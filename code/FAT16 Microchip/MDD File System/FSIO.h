@@ -1393,7 +1393,7 @@ int FSCreateMBR (unsigned long firstSector, unsigned long numSectors);
 
 void allocate_size(DWORD size,FSFILE *stream,BOOL all);
 BYTE FILEallocate_multiple_clusters(FSFILE *fo, DWORD num_clusters);
-DWORD get_First_Sector(FSFILE *stream);
+DWORD File_get_true_sector(FSFILE *stream);
 BYTE FAT_print_cluster_chain (DWORD cluster, DISK * dsk);
 
 #endif
