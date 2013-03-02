@@ -47,7 +47,16 @@ int main(void)
 
     Uart2Init(InterruptRoutine);
 
-    NewSDWrite();
+
+    NewSDInit();
+
+    unsigned char outbuf[512]; // generate some data
+    unsigned long i;
+    for (i = 0; i < 512; i++) {
+        outbuf[i] = i % 26 + 'a';
+    }
+
+    NewSDWriteSector(*outbuf);
 
     while(1);
 }

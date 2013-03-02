@@ -8,6 +8,7 @@
 #ifndef OFBPROXY_H
 #define	OFBPROXY_H
 
+void OFB_set(unsigned char *buffer);
 unsigned int OFB_getSize (void);
 int OFB_read_tail(unsigned char outputarray[]);
 int OFB_pop(void);

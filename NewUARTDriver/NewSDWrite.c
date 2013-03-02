@@ -42,9 +42,8 @@ void NewSDWrite()
         outbuf[i] = i % 26 + 'a';
     }
 
-    DWORD num_clusters = ceilf(TOTAL_SECTORS / (float)pointer->dsk->SecPerClus);
-
     // Chain together the clusters we need
+    DWORD num_clusters = ceilf(TOTAL_SECTORS / (float)pointer->dsk->SecPerClus);
     allocate_multiple_clusters(pointer, num_clusters);
 
     // Set the current cluster and sector to the first cluster of the file.
@@ -109,6 +108,7 @@ int allocate_multiple_clusters(FSFILE* fo, DWORD num_clusters)
 
 /**
  * Correct the sector and cluster data for a file to be valid numbers.
+ * Not tested or used.
  * @param fo The file to normalize
  */
 void normalize_file_data(FSFILE* fo)
@@ -117,3 +117,79 @@ void normalize_file_data(FSFILE* fo)
     fo->sec = fo->sec%fo->dsk->SecPerClus;      // The current sector in the current cluster of the file
 }
 
+/**
+ * Doesn't work. Proposed functionality:
+ * Write a sector's worth of data to the sd card. First call creates a new file.
+ * Successive calls write to the same file.
+ * @param outbuf Pointer to the data to write
+ * @return 1 if successful, 0 othersise.
+ */
+int NewSDWriteSector(const unsigned char outbuf[BYTES_PER_SECTOR])
+{
+    DWORD CurrentSector = 0;
+    DWORD SectorLimit = 0;
+    static int firstCall = 1;
+    while (!MDD_MediaDetect()); // !! make this smarter
+    char filename[] = "1.txt";
+    static FSFILE * pointer = NULL;
+
+    // connect to sd card (!! similar to MDD_MediaDetect)
+    MDD_SDSPI_MediaInitialize();
+
+    // open a file (should run only once)
+    while (pointer == NULL) {
+        pointer = FSfopen(filename, "w"); 
+    }
+
+    // Chain together the clusters we need
+    DWORD num_clusters = ceilf(TOTAL_SECTORS / (float)pointer->dsk->SecPerClus);
+    allocate_multiple_clusters(pointer, num_clusters);
+
+    // Set the current cluster and sector to the first cluster of the file.
+    //  #Problem: this will overwrite a file that's already written
+    if (firstCall) {
+        pointer->ccls = pointer->cluster;
+    }
+
+    // Calculate the real sector number of our current place in the file.
+    CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls) + pointer->sec;
+    SectorLimit = Cluster2Sector(pointer->dsk, pointer->ccls) + pointer->dsk->SecPerClus;
+    
+    // Write the data
+    int success = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, 0);
+    if (!success) { // debug
+        return 0;
+    }
+
+    // Check to see if we need to go to a new cluster;
+    //  otherwise, next cluster
+    if (CurrentSector == SectorLimit - 1) {
+        // Set cluster and sector to next cluster in out chain
+        pointer->ccls = ReadFAT(pointer->dsk, pointer->ccls);
+        pointer->sec = 0;
+        CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls);
+        SectorLimit = CurrentSector + pointer->dsk->SecPerClus;
+    } else {
+        pointer->sec++;
+    }
+    
+    gNeedFATWrite = TRUE;
+    gNeedDataWrite = FALSE;
+    // save off the positon
+    pointer->pos = BYTES_PER_SECTOR-1; // current position in sector (bytes)
+
+    // save off the seek
+    pointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
+
+    // now the new size
+    //  #Problem: This might not be accurate
+    pointer->size += BYTES_PER_SECTOR; // size of file (bytes)
+    FSfclose(pointer);
+    return 1;
+}
+
+void NewSDInit()
+{
+    while (!MDD_MediaDetect()); // !! make this smarter
+    while (!FSInit());
+}
