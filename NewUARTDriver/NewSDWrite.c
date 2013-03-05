@@ -8,11 +8,36 @@
 #define TOTAL_SECTORS 80L
 #define BYTES_PER_SECTOR 512L
 
+// Directory entry structure
+typedef struct
+{
+    char      DIR_Name[DIR_NAMESIZE];           // File name
+    char      DIR_Extension[DIR_EXTENSION];     // File extension
+    BYTE      DIR_Attr;                         // File attributes
+    BYTE      DIR_NTRes;                        // Reserved byte
+    BYTE      DIR_CrtTimeTenth;                 // Create time (millisecond field)
+    WORD      DIR_CrtTime;                      // Create time (second, minute, hour field)
+    WORD      DIR_CrtDate;                      // Create date
+    WORD      DIR_LstAccDate;                   // Last access date
+    WORD      DIR_FstClusHI;                    // High word of the entry's first cluster number
+    WORD      DIR_WrtTime;                      // Last update time
+    WORD      DIR_WrtDate;                      // Last update date
+    WORD      DIR_FstClusLO;                    // Low word of the entry's first cluster number
+    DWORD     DIR_FileSize;                     // The 32-bit file size
+}_DIRENTRY;
+
+typedef _DIRENTRY * DIRENTRY;                   // A pointer to a directory entry structure
+typedef FSFILE   * FILEOBJ;
 int allocate_multiple_clusters(FSFILE*, DWORD);
 BYTE FILEallocate_new_cluster(FSFILE *fo, BYTE mode);
 DWORD FILEget_true_sector(FSFILE *);
 DWORD ReadFAT (DISK *, DWORD);
 DWORD Cluster2Sector(DISK *, DWORD);
+DIRENTRY LoadDirAttrib(FILEOBJ fo, WORD *fHandle);
+DWORD WriteFAT (DISK *dsk, DWORD ccls, DWORD value, BYTE forceWrite);
+void IncrementTimeStamp(DIRENTRY dir);
+BYTE Write_File_Entry( FILEOBJ fo, WORD * curEntry);
+BYTE flushData (void);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 
@@ -219,7 +244,7 @@ FSFILE * NewSDInit(char *filename)
 
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;
-    FSfclose(pointer);
+    NewFileUpdate(pointer);
     return pointer;
 }
 
@@ -268,7 +293,33 @@ int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
     // now the new size
     //  #Problem: This might not be accurate
     pointer->size += BYTES_PER_SECTOR; // size of file (bytes)
-    FSfclose(pointer);
+    NewFileUpdate(pointer);
 
     return 1;
+}
+
+/**
+ * Mimics FSfileClose to write file info to the SD card.
+ * @param fo The file to update
+ */
+void NewFileUpdate(FSFILE * fo)
+{
+    DIRENTRY dir;
+    WORD fHandle = fo->entry;
+
+    // Write the file data
+//    if(flushData()) while(1);
+    WriteFAT (fo->dsk, 0, 0, TRUE);
+    
+
+    // Isn't correct anyways
+    //IncrementTimeStamp(dir);
+
+    // Update file entry data
+    dir = LoadDirAttrib(fo, &fHandle);
+    dir->DIR_FileSize = fo->size;
+    dir->DIR_Attr = fo->attributes;
+    dir->DIR_FstClusHI= (fo->cluster&0xFFFF0000)>>16;
+    dir->DIR_FstClusLO= fo->cluster&0x0000FFFF;
+    Write_File_Entry(fo,&fHandle);
 }

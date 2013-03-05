@@ -11,8 +11,6 @@
 
 #include "SD-SPI.h"
 
-static char bufferflag;
-static char need_buffer;
 //FSFILE * pointer;
 
 void Init_Data_Logger(int id) {

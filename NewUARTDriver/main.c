@@ -49,21 +49,23 @@ int main(void)
 
 
 //    NewSDSimpleInit();
-//
+
     unsigned char outbuf[512]; // generate some data
     unsigned long i;
     for (i = 0; i < 512; i++) {
+        outbuf[i] = i % 26 + 'a';
+    }
+    FSFILE *this = NewSDInit("This.txt");
+    NewSDWriteSector(this, outbuf);
+
+//    NewSDSimpleWriteSector(outbuf);
+    for (i = 0; i < 512; i++) {
         outbuf[i] = i % 26 + 'A';
     }
-//
 //    NewSDSimpleWriteSector(outbuf);
-//    for (i = 0; i < 512; i++) {
-//        outbuf[i] = i % 26 + 'a';
-//    }
-//    NewSDSimpleWriteSector(outbuf);
-
-    FSFILE *point = NewSDInit("This.txt");
-    NewSDWriteSector(point, outbuf);
+    
+    FSFILE *that = NewSDInit("That.txt");
+    NewSDWriteSector(that, outbuf);
     while(1);
 }
 
