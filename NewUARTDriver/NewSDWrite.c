@@ -122,20 +122,20 @@ void normalize_file_data(FSFILE* fo)
  * @param outbuf Pointer to the data to write
  * @return 1 if successful, 0 othersise.
  */
-int NewSDWriteSector(const unsigned char outbuf[BYTES_PER_SECTOR])
+int NewSDSimpleWriteSector(const unsigned char outbuf[BYTES_PER_SECTOR])
 {
     DWORD CurrentSector = 0;
     DWORD SectorLimit = 0;
     static DWORD currentCluster;
     static int firstCall = 1;
     while (!MDD_MediaDetect()); // !! make this smarter
-    const char filename[] = "one.txt";
+    const char filename[] = "simple.txt";
     FSFILE * pointer = NULL;
 
     // connect to sd card (!! similar to MDD_MediaDetect)
     MDD_SDSPI_MediaInitialize();
 
-    // open a file (should run only once)
+    // Open a new file the first time, append it otherwise.
     if (firstCall){
         while (pointer == NULL) pointer = FSfopen(filename, "w");
     } else {
@@ -189,8 +189,86 @@ int NewSDWriteSector(const unsigned char outbuf[BYTES_PER_SECTOR])
     return 1;
 }
 
-void NewSDInit()
+/**
+ * Initialize for writing to the SD card using NewSDSimpleWriteSector
+ */
+void NewSDSimpleInit()
 {
     while (!MDD_MediaDetect()); // !! make this smarter
     while (!FSInit());
+}
+
+/**
+ * Initalizes filesystems and returns a file structure for use with
+ * NewSDWriteSector.
+ * @param filename A string with the filename (name.ext)
+ * @return A file structure
+ */
+FSFILE * NewSDInit(char *filename)
+{
+    FSFILE * pointer = NULL;
+
+    while (!MDD_MediaDetect()); // !! make this smarter
+    while (!FSInit());
+
+    // Open a new file
+    while (pointer == NULL) pointer = FSfopen(filename, "w");
+
+    // Initialize data for NewSDWriteSector
+    pointer->ccls = pointer->cluster;
+
+    gNeedFATWrite = TRUE;
+    gNeedDataWrite = FALSE;
+    FSfclose(pointer);
+    return pointer;
+}
+
+/**
+ * Does not work. Proposed functionality:
+ * Writes the data in outbuf to the file (pointer)
+ * @param pointer The FSFILE to write to
+ * @param outbuf An array of data (BYTES_PER_SECTOR in legnth)
+ * @return 1 if successful, 0 otherwise. 
+ */
+int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
+{
+    // Calculate the real sector number of our current place in the file.
+    DWORD CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls)
+            + pointer->sec;
+    DWORD SectorLimit = Cluster2Sector(pointer->dsk, pointer->ccls)
+            + pointer->dsk->SecPerClus;
+
+    // Write the data
+    int success = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, 0);
+    if (!success) { // debug
+        return 0;
+    }
+
+    // Check to see if we need to go to a new cluster;
+    //  otherwise, next cluster
+    if (CurrentSector == SectorLimit - 1) {
+        // Set cluster and sector to next cluster in out chain
+        pointer->ccls = ReadFAT(pointer->dsk, pointer->ccls);
+        pointer->sec = 0;
+        CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls);
+        SectorLimit = CurrentSector + pointer->dsk->SecPerClus;
+    } else {
+        pointer->sec++;
+    }
+
+    gNeedFATWrite = TRUE;
+    gNeedDataWrite = FALSE;
+
+    // save off the positon
+    pointer->pos = BYTES_PER_SECTOR-1; // current position in sector (bytes)
+
+    // save off the seek
+    pointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
+
+    // now the new size
+    //  #Problem: This might not be accurate
+    pointer->size += BYTES_PER_SECTOR; // size of file (bytes)
+    FSfclose(pointer);
+
+    return 1;
 }

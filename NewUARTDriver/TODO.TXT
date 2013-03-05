@@ -2,3 +2,5 @@ Todo List
 =========
 
 -Handle FAT partitions with non-512-byte sectors
+
+-Update files with correct date/time information or some kind of system

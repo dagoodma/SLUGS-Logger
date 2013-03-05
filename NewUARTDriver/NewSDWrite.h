@@ -1,8 +1,9 @@
 #ifndef NEWSDWRITE_H
 #define	NEWSDWRITE_H
 
-int NewSDWriteSector(const unsigned char *);
-void NewSDInit();
+int NewSDSimpleWriteSector(const unsigned char *);
+void NewSDSimpleInit();
+FSFILE * NewSDInit(char *filename);
 
 
 #endif

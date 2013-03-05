@@ -48,20 +48,22 @@ int main(void)
     Uart2Init(InterruptRoutine);
 
 
-    NewSDInit();
-
+//    NewSDSimpleInit();
+//
     unsigned char outbuf[512]; // generate some data
     unsigned long i;
     for (i = 0; i < 512; i++) {
         outbuf[i] = i % 26 + 'A';
     }
+//
+//    NewSDSimpleWriteSector(outbuf);
+//    for (i = 0; i < 512; i++) {
+//        outbuf[i] = i % 26 + 'a';
+//    }
+//    NewSDSimpleWriteSector(outbuf);
 
-    NewSDWriteSector(outbuf);
-    for (i = 0; i < 512; i++) {
-        outbuf[i] = i % 26 + 'a';
-    }
-    NewSDWriteSector(outbuf);
-
+    FSFILE *point = NewSDInit("This.txt");
+    NewSDWriteSector(point, outbuf);
     while(1);
 }
 
