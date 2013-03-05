@@ -86,7 +86,6 @@ void NewSDWrite()
     //  #Problem: This might not be accurate
     pointer->size = TOTAL_SECTORS * BYTES_PER_SECTOR; // size of file (bytes)
     FSfclose(pointer);
-    int thelast = 1; // debug
 }
 
 /**
@@ -118,7 +117,6 @@ void normalize_file_data(FSFILE* fo)
 }
 
 /**
- * Doesn't work. Proposed functionality:
  * Write a sector's worth of data to the sd card. First call creates a new file.
  * Successive calls write to the same file.
  * @param outbuf Pointer to the data to write
@@ -128,27 +126,28 @@ int NewSDWriteSector(const unsigned char outbuf[BYTES_PER_SECTOR])
 {
     DWORD CurrentSector = 0;
     DWORD SectorLimit = 0;
+    static DWORD currentCluster;
     static int firstCall = 1;
     while (!MDD_MediaDetect()); // !! make this smarter
-    char filename[] = "1.txt";
-    static FSFILE * pointer = NULL;
+    const char filename[] = "one.txt";
+    FSFILE * pointer = NULL;
 
     // connect to sd card (!! similar to MDD_MediaDetect)
     MDD_SDSPI_MediaInitialize();
 
     // open a file (should run only once)
-    while (pointer == NULL) {
-        pointer = FSfopen(filename, "w"); 
+    if (firstCall){
+        while (pointer == NULL) pointer = FSfopen(filename, "w");
+    } else {
+        while (pointer == NULL) pointer = FSfopen(filename, "a");
     }
-
-    // Chain together the clusters we need
-    DWORD num_clusters = ceilf(TOTAL_SECTORS / (float)pointer->dsk->SecPerClus);
-    allocate_multiple_clusters(pointer, num_clusters);
 
     // Set the current cluster and sector to the first cluster of the file.
     //  #Problem: this will overwrite a file that's already written
     if (firstCall) {
         pointer->ccls = pointer->cluster;
+    } else {
+        pointer->ccls = currentCluster;
     }
 
     // Calculate the real sector number of our current place in the file.
@@ -184,7 +183,9 @@ int NewSDWriteSector(const unsigned char outbuf[BYTES_PER_SECTOR])
     // now the new size
     //  #Problem: This might not be accurate
     pointer->size += BYTES_PER_SECTOR; // size of file (bytes)
+    currentCluster = pointer->ccls;
     FSfclose(pointer);
+    firstCall = 0;
     return 1;
 }
 
