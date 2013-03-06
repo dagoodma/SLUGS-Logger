@@ -101,8 +101,8 @@ int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
         // Set cluster and sector to next cluster in out chain
         pointer->ccls = ReadFAT(pointer->dsk, pointer->ccls);
         pointer->sec = 0;
-        CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls);
-        SectorLimit = CurrentSector + pointer->dsk->SecPerClus;
+        //CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls);
+        //SectorLimit = CurrentSector + pointer->dsk->SecPerClus;
     } else {
         pointer->sec++;
     }

@@ -126,6 +126,6 @@ Wrote: 0BFD
 Writing: 0BFE
 Wrote: 0BFE
 Writing: 0BFF
-Wrote: 40780
+Wrote: 0BFF
 Writing: 40780
-// failed here
+// failed here. This could indicate a bad transition to the next cluster. 
