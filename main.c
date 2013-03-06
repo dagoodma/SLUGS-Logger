@@ -5,12 +5,16 @@
  * Created on February 12, 2013, 11:17 AM
  */
 #define UART2_BUFFER_SIZE 512
+#define DATA_SIZE 512*40
 
+#include <stdint.h>
+#include "CircularBuffer.h"
 #include <xc.h>
 #include "Uart2.h"
 #include <stddef.h>
 #include "Libs/Microchip/Include/MDD File System/FSIO.h"
 #include "NewSDWrite.h"
+#include "Node.h"
 
 _FOSCSEL(FNOSC_FRC);
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
@@ -18,6 +22,9 @@ _FWDT(FWDTEN_OFF);
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize);
 
+FSFILE *file;
+CircularBuffer circBuf;
+unsigned char data[DATA_SIZE];
 /*
  * 
  */
@@ -47,29 +54,21 @@ int main(void)
 
     Uart2Init(InterruptRoutine);
 
+    if (!CB_Init(&circBuf, data, DATA_SIZE)) FATAL_ERROR();
 
-//    NewSDSimpleInit();
-
-    unsigned char outbuf[512]; // generate some data
-    unsigned long i;
-    for (i = 0; i < 512; i++) {
-        outbuf[i] = i % 26 + 'a';
-    }
-    FSFILE *this = NewSDInit("This.txt");
-    NewSDWriteSector(this, outbuf);
-
-//    NewSDSimpleWriteSector(outbuf);
-    for (i = 0; i < 512; i++) {
-        outbuf[i] = i % 26 + 'A';
-    }
-//    NewSDSimpleWriteSector(outbuf);
     
-    FSFILE *that = NewSDInit("That.txt");
-    NewSDWriteSector(that, outbuf);
-    while(1);
+    
+    file = NewSDInit("newfile.txt");
+    while(1)
+    {
+        unsigned char outData[UART2_BUFFER_SIZE];
+        if (CB_ReadMany(&circBuf, outData, UART2_BUFFER_SIZE)){
+            NewSDWriteSector(file, outData);
+        }
+    }
 }
 
-void InterruptRoutine(unsigned char *Buffer, int BufferSize) // not used currently
+void InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
     // When one buffer has been filled
     // Print both buffers (sorta echo)
@@ -77,4 +76,6 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize) // not used current
     for (i = 0; i < BufferSize; i++) {
         Uart2PrintChar(Buffer[i]);
     }
+
+    CB_WriteMany(&circBuf, Buffer, BufferSize, 1); // the 1 is arbitrary
 }
