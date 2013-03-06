@@ -1,12 +1,9 @@
 #include <xc.h>
 #include <stddef.h>
-#include "FSIO.h"
+#include "Libs/Microchip/Include/MDD File System/FSIO.h"
 #include <spi.h>
 #include <math.h>
-
-// this cannot be greater than the number of sectors in a cluster
-#define TOTAL_SECTORS 80L
-#define BYTES_PER_SECTOR 512L
+#include "NewSDWrite.h"
 
 // Directory entry structure
 typedef struct
@@ -38,7 +35,6 @@ DWORD WriteFAT (DISK *dsk, DWORD ccls, DWORD value, BYTE forceWrite);
 void IncrementTimeStamp(DIRENTRY dir);
 BYTE Write_File_Entry( FILEOBJ fo, WORD * curEntry);
 BYTE flushData (void);
-void NewFileUpdate(FSFILE * fo);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 

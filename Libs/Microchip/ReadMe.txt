@@ -1,0 +1,1 @@
+This is a paired down clone of the Microchip application libraries. Unnecessary files/folders were deleted but the basic file structure is the same.

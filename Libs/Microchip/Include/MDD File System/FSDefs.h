@@ -8,7 +8,7 @@
  * Processor:       PIC18/PIC24/dsPIC30/dsPIC33/PIC32
  * Compiler:        C18/C30/C32
  * Company:         Microchip Technology, Inc.
- * Version:         1.2.0
+ * Version:         1.2.4
  *
  * Software License Agreement
  *
@@ -73,7 +73,8 @@ typedef enum _CETYPE
     CE_READONLY,                    // The file is read-only
     CE_WRITEONLY,                   // The file is write-only
     CE_INVALID_ARGUMENT,            // Invalid argument
-    CE_TOO_MANY_FILES_OPEN          // Too many files are already open
+    CE_TOO_MANY_FILES_OPEN,         // Too many files are already open
+    CE_UNSUPPORTED_SECTOR_SIZE      // Unsupported sector size
 } CETYPE;
 
 
@@ -263,7 +264,7 @@ typedef enum _CETYPE
 
 // Summary: A structure containing information about the device.
 // Description: The DISK structure contains information about the device being accessed.
-typedef struct 
+typedef struct
 { 
     BYTE    *   buffer;         // Address of the global data buffer used to read and write file information
     DWORD       firsts;         // Logical block address of the first sector of the FAT partition on the device
@@ -272,13 +273,17 @@ typedef struct
     DWORD       data;           // Logical block address of the data section of the device.
     WORD        maxroot;        // The maximum number of entries in the root directory.
     DWORD       maxcls;         // The maximum number of clusters in the partition.
-    WORD        fatsize;        // The number of sectors in the FAT
+    DWORD       sectorSize;     // The size of a sector in bytes
+    DWORD       fatsize;        // The number of sectors in the FAT
     BYTE        fatcopy;        // The number of copies of the FAT in the partition
     BYTE        SecPerClus;     // The number of sectors per cluster in the data region
     BYTE        type;           // The file system type of the partition (FAT12, FAT16 or FAT32)
     BYTE        mount;          // Device mount flag (TRUE if disk was mounted successfully, FALSE otherwise)
+#if defined __PIC32MX__ || defined __C30__
+} __attribute__ ((packed)) DISK;
+#else
 } DISK;
-
+#endif
 
 
 #ifdef __18CXX
@@ -293,7 +298,11 @@ typedef struct
     typedef struct
     {
         unsigned char array[3];
+#if defined __PIC32MX__ || defined __C30__
+    } __attribute__ ((packed)) SWORD;
+#else
     } SWORD;
+#endif
 #endif
 
 
@@ -321,7 +330,11 @@ typedef struct {
     BYTE  BootSec_VolID[4];         // Volume ID
     BYTE  BootSec_VolLabel[11];     // Volume Label
     BYTE  BootSec_FSType[8];        // File system type in ASCII. Not used for determination   
-}_BPB_FAT12;
+#if defined __PIC32MX__ || defined __C30__
+    } __attribute__ ((packed)) _BPB_FAT12;
+#else
+    } _BPB_FAT12;
+#endif
 
 // Summary: A structure containing the bios parameter block for a FAT16 file system (in the boot sector)
 // Description: The _BPB_FAT16 structure provides a layout of the "bios parameter block" in the boot sector of a FAT16 partition.
@@ -346,8 +359,11 @@ typedef struct {
     BYTE  BootSec_VolID[4];         // Volume ID
     BYTE  BootSec_VolLabel[11];     // Volume Label
     BYTE  BootSec_FSType[8];        // File system type in ASCII. Not used for determination     
-}_BPB_FAT16;
-
+#if defined __PIC32MX__ || defined __C30__
+    } __attribute__ ((packed)) _BPB_FAT16;
+#else
+    } _BPB_FAT16;
+#endif
 
 // Summary: A structure containing the bios parameter block for a FAT32 file system (in the boot sector)
 // Description: The _BPB_FAT32 structure provides a layout of the "bios parameter block" in the boot sector of a FAT32 partition.
@@ -379,8 +395,11 @@ typedef struct {
     BYTE  BootSec_VolID[4];         // Volume ID
     BYTE  BootSec_VolLab[11];       // Volume Label
     BYTE  BootSec_FilSysType[8];    // File system type in ASCII.  Not used for determination  
-}_BPB_FAT32;
-
+#if defined __PIC32MX__ || defined __C30__
+    } __attribute__ ((packed)) _BPB_FAT32;
+#else
+    } _BPB_FAT32;
+#endif
 
 
 // Description: A macro for the boot sector bytes per sector value offset
@@ -437,8 +456,11 @@ typedef struct
     SWORD     PTE_LstPartSect;        // The cylinder-head-sector address of the last sector of the partition
     DWORD     PTE_FrstSect;           // The logical block address of the first sector of the partition
     DWORD     PTE_NumSect;            // The number of sectors in a partition
-} PTE_MBR;
-
+#if defined __PIC32MX__ || defined __C30__
+    } __attribute__ ((packed)) PTE_MBR;
+#else
+    } PTE_MBR;
+#endif
 
 
 // Summary: A structure of the organization of a master boot record.
@@ -453,10 +475,10 @@ typedef struct
     PTE_MBR     Partition3;             // The fourth partition table entry
     BYTE        Signature0;             // MBR signature code - equal to 0x55
     BYTE        Signature1;             // MBR signature code - equal to 0xAA
-#ifdef __18CXX
-}_PT_MBR;
-#else
+#if defined __PIC32MX__ || defined __C30__
 }__attribute__((packed)) _PT_MBR;
+#else
+}_PT_MBR;
 #endif
 
 // Summary: A pointer to a _PT_MBR structure
@@ -477,11 +499,14 @@ typedef struct
         _BPB_FAT16  FAT_16;
         _BPB_FAT12  FAT_12;
     }FAT;
-    BYTE    Reserved[MEDIA_SECTOR_SIZE-sizeof(_BPB_FAT32)-2]; // Reserved space
+    BYTE    Reserved[512-sizeof(_BPB_FAT32)-2]; // Reserved space
     BYTE    Signature0;         // Boot sector signature code - equal to 0x55
     BYTE    Signature1;         // Boot sector signature code - equal to 0xAA
-}_BootSec;
-
+#if defined __PIC32MX__ || defined __C30__
+    } __attribute__ ((packed)) _BootSec;
+#else
+    } _BootSec;
+#endif
 
 // Summary: A pointer to a _BootSec structure
 // Description: The BootSec pointer points to a _BootSec structure.
@@ -504,6 +529,30 @@ typedef _BootSec * BootSec;
 // Description: The FAT_GOOD_SIGN_1 macro is used to determine that the second byte of the MBR or boot sector signature code is correct
 #define FAT_GOOD_SIGN_1     0xAA
 
+
+typedef struct 
+{
+    BYTE    errorCode;
+    union 
+    {
+        BYTE    value;
+        struct 
+        {
+            BYTE    sectorSize  : 1;
+            BYTE    maxLUN      : 1;
+        }   bits;
+    } validityFlags;
+    
+    WORD    sectorSize;
+    BYTE    maxLUN;
+} MEDIA_INFORMATION;
+
+typedef enum
+{
+    MEDIA_NO_ERROR,                     // No errors
+    MEDIA_DEVICE_NOT_PRESENT,           // The requested device is not present
+    MEDIA_CANNOT_INITIALIZE             // Cannot initialize media
+} MEDIA_ERRORS;                
 
 
 #endif
