@@ -77,5 +77,4 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize) // not used current
     for (i = 0; i < BufferSize; i++) {
         Uart2PrintChar(Buffer[i]);
     }
-    OFB_set(Buffer);
 }

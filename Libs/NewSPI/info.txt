@@ -1,0 +1,29 @@
+SPI Library
+===========
+===========
+
+Functions
+=========
+
+Init()		## Continue with this - going through OpenSPIM in SD-SPI to see how
+		## the SPI is configured. Then use OpenSPIx to configure SPI in your
+		## code.
+	Initializes the SPI1 peripheral.
+	Master Enable = 	On
+	Primary Prescaler = 	0x0003
+	Secondary Prescaler = 	0x001C
+
+	SPICON1bits.CKP = 1;
+	SPICON1bits.CKE = 0;
+	
+	SPICLOCK = 0;
+	SPIOUT = 0;                  // define SDO1 as output (master or slave)
+	SPIIN = 1;                  // define SDI1 as input (master or slave)
+	SPIENABLE = 1;             // enable synchronous serial port
+Read()
+	Reads a byte from the SPI1 peripheral.
+	Wraps the ReadSPI1 function. (spi.h)
+
+Write()
+	Writes a byte to the SPI1 peripheral.
+	Wraps the WriteSPI1 function. (spi.h)
