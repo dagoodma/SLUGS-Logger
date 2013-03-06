@@ -20,4 +20,6 @@ void Uart2Init(void (*Callback)(unsigned char *, int)); // initializes UART and 
 
 void Uart2PrintChar(char in); // sends a character with UART2
 
+void Uart2PrintStr(char *string); // sends a string
+
 #endif	/* UART2_H */

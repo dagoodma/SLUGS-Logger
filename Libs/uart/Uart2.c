@@ -1,5 +1,6 @@
 #include <xc.h>
 #include "Uart2.h"
+#include <string.h>
 
 unsigned char BufferA[UART2_BUFFER_SIZE] __attribute__((space(dma)));
 unsigned char BufferB[UART2_BUFFER_SIZE] __attribute__((space(dma)));
@@ -60,6 +61,18 @@ void Uart2PrintChar(char in)
 {
 	while(U2STAbits.UTXBF); // wait for a space in the buffer
 	U2TXREG = in;
+}
+
+/**
+ * Sends multiple characters through the UART2
+ * @param string The string to send
+ */
+void Uart2PrintStr(char *string)
+{
+    int i;
+    for (i = 0; i<strlen(string); i++) {
+        Uart2PrintChar(string[i]);
+    }
 }
 
 

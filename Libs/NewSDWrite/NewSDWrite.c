@@ -4,6 +4,8 @@
 #include <spi.h>
 #include <math.h>
 #include "NewSDWrite.h"
+#include "Uart2.h"
+#include <stdio.h>
 
 // Directory entry structure
 typedef struct
@@ -71,11 +73,21 @@ FSFILE * NewSDInit(char *filename)
  */
 int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
 {
+    char text[25]; // !! debug
     // Calculate the real sector number of our current place in the file.
+    union{
+        DWORD           dword;
+        unsigned int    ints[2];
+    }CSect;
     DWORD CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls)
             + pointer->sec;
     DWORD SectorLimit = Cluster2Sector(pointer->dsk, pointer->ccls)
             + pointer->dsk->SecPerClus;
+
+    CSect.dword = CurrentSector;
+    sprintf(text, "Writing: %X%X\n", CSect.ints[1], CSect.ints[0]);
+    Uart2PrintStr(text);
+    //Uart2PrintStr(sprintf("Writing: %x\n", CurrentSector));
 
     // Write the data
     int success = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, 0);
@@ -108,6 +120,12 @@ int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
     //  #Problem: This might not be accurate
     pointer->size += BYTES_PER_SECTOR; // size of file (bytes)
     NewFileUpdate(pointer);
+
+    
+    CSect.dword = CurrentSector;
+    sprintf(text, "Wrote: %X%X\n", CSect.ints[1], CSect.ints[0]);
+    Uart2PrintStr(text);
+    //Uart2PrintStr("Wrote.\n");
 
     return 1;
 }

@@ -5,7 +5,7 @@
  * Created on February 12, 2013, 11:17 AM
  */
 #define UART2_BUFFER_SIZE 512
-#define DATA_SIZE 512*40
+#define DATA_SIZE 512*10
 
 #include <stdint.h>
 #include "CircularBuffer.h"
@@ -57,7 +57,7 @@ int main(void)
     if (!CB_Init(&circBuf, data, DATA_SIZE)) FATAL_ERROR();
 
     
-    
+    Uart2PrintStr("Begin.\n");
     file = NewSDInit("newfile.txt");
     while(1)
     {
@@ -72,10 +72,10 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
     // When one buffer has been filled
     // Print both buffers (sorta echo)
-    int i;
-    for (i = 0; i < BufferSize; i++) {
-        Uart2PrintChar(Buffer[i]);
-    }
+//    int i;
+//    for (i = 0; i < BufferSize; i++) {
+//        Uart2PrintChar(Buffer[i]);
+//    }
 
     CB_WriteMany(&circBuf, Buffer, BufferSize, 1); // the 1 is arbitrary
 }
