@@ -61,9 +61,13 @@ int main(void)
     file = NewSDInit("newfile.txt");
     while(1)
     {
-        unsigned char outData[UART2_BUFFER_SIZE];
-        if (CB_ReadMany(&circBuf, outData, UART2_BUFFER_SIZE)){
-            NewSDWriteSector(file, outData);
+        if (MDD_MediaDetect()){
+            unsigned char outData[UART2_BUFFER_SIZE];
+            if (CB_PeekMany(&circBuf, outData, UART2_BUFFER_SIZE)){
+                if(NewSDWriteSector(file, outData)){
+                    CB_Remove(&circBuf, UART2_BUFFER_SIZE);
+                }
+            }
         }
     }
 }

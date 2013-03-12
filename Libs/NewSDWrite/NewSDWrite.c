@@ -76,6 +76,12 @@ FSFILE * NewSDInit(char *filename)
  */
 int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
 {
+    // Re-check SD card
+    if(!MDD_MediaDetect()) {
+        return 0;
+    }
+//    while(!FSInit());
+    
     char text[25]; // !! debug
     // Calculate the real sector number of our current place in the file.
     union{
@@ -95,6 +101,7 @@ int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
     // Write the data
     int success = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, 0);
     if (!success) { // debug
+        while(1);
         return 0;
     }
 
@@ -162,6 +169,8 @@ void NewFileUpdate(FSFILE * fo)
 
 /**
  * Allocate more clusters for a file.
+ * !! This won't work. FILEallocate_new_cluster changes fo->ccls. One would need
+ * to keep track of the real current cluster some other way.
  * @param fo File Object of the file you want to extend.
  * @param num_clusters The number of clusters to allocate.
  * @return Returns the number of successful allocations.
