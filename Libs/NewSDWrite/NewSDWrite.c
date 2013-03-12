@@ -59,6 +59,9 @@ FSFILE * NewSDInit(char *filename)
     // Initialize data for NewSDWriteSector
     pointer->ccls = pointer->cluster;
 
+    // Trying something:
+//    FILEallocate_new_cluster(pointer, 0);
+
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;
     NewFileUpdate(pointer);
@@ -96,16 +99,14 @@ int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
     }
 
     // Check to see if we need to go to a new cluster;
-    //  otherwise, next cluster
+    //  otherwise, next sector
     if (CurrentSector == SectorLimit - 1) {
-        // Set cluster and sector to next cluster in out chain
+        // Set cluster and sector to next cluster in our chain
         if(FILEallocate_new_cluster(pointer, 0)!=CE_GOOD){ // allocate a new cluster
+            // !! Also sets ccls to the new cluster
             while(1);
         }
-        pointer->ccls = ReadFAT(pointer->dsk, pointer->ccls); // find the new cluster
         pointer->sec = 0;
-        //CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls);
-        //SectorLimit = CurrentSector + pointer->dsk->SecPerClus;
     } else {
         pointer->sec++;
     }
