@@ -76,14 +76,9 @@ FSFILE * NewSDInit(char *filename)
  */
 int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
 {
-    // Re-check SD card
-    MEDIA_INFORMATION * Minfo;
-    do {
-        Minfo = MDD_MediaInitialize();
-    } while(Minfo->errorCode == MEDIA_CANNOT_INITIALIZE);
-//    if(!MDD_MediaDetect()) {
-//        return 0;
-//    }
+    if(!MDD_MediaDetect()) {
+        return 0;
+    }
 //    while(!FSInit());
     
     char text[25]; // !! debug

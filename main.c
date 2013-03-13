@@ -59,15 +59,31 @@ int main(void)
     
     Uart2PrintStr("Begin.\n");
     file = NewSDInit("newfile.txt");
+
+    int SDConnected = 0;
     while(1)
     {
-        if (MDD_MediaDetect()){
+        if (MDD_MediaDetect())
+        {
+            // if the board was just plugged in try to reinitialize
+            if(!SDConnected) {
+                MEDIA_INFORMATION * Minfo;
+                do {
+                    Minfo = MDD_MediaInitialize();
+                } while(Minfo->errorCode == MEDIA_CANNOT_INITIALIZE);
+                SDConnected = 1;
+            }
+            // When we are connected and initialized, poll the buffer, if there
+            // is data, write it.
             unsigned char outData[UART2_BUFFER_SIZE];
             if (CB_PeekMany(&circBuf, outData, UART2_BUFFER_SIZE)){
                 if(NewSDWriteSector(file, outData)){
+                    // Remove the data we just wrote.
                     CB_Remove(&circBuf, UART2_BUFFER_SIZE);
                 }
             }
+        } else {
+            SDConnected = 0;
         }
     }
 }
