@@ -1,0 +1,17 @@
+Significant Events/States
+
+SD card is disconnected
+	Do not attempt to write
+	Reinitialize the card when it is put back
+
+Circular buffer is full
+	Replace oldest data with incoming data
+
+Circular buffer is almost full
+	Allocate only necessary clusters
+
+Circular buffer is empty/almost empty
+	Allocate extra clusters
+
+
+Thought: if it can allocate only as needed at full speed and keep up, why allocate more than necessary? Allocating more at once will not help with speed and will potentially waste card space. (Unless allocating multiple clusters at once is more efficient than allocating one at a time, however this may require manual reworking of library code.)
