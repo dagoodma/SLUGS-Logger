@@ -1,0 +1,3 @@
+115200 baud
+
+sent from a board which produces a known output - the 'original' file is copied from what CoolTerm received from that board. The rest are what the data logger wrote to the SD card.

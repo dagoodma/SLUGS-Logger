@@ -13,7 +13,7 @@
 #endif
 
 #define FCY 40000000 // assumes 40Mhz freq
-#define BAUDRATE 38400 // #TODO assumes 115200 baud rate
+#define BAUDRATE 115200 // assumes 115200 baud rate
 #define BRGVAL ((FCY/BAUDRATE)/16)-1 // used in Uart2Init()
 
 void Uart2Init(void (*Callback)(unsigned char *, int)); // initializes UART and DMA to a ping-pong buffer

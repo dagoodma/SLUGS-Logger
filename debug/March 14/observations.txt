@@ -1,0 +1,5 @@
+Test observations
+
+Note that less than 512 bytes will be dropped at the end of a file due to only copying 512 at a time.
+
+Both baud rates produced IDENTICAL output - the errors are unrelated to baud rate

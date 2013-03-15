@@ -26,6 +26,7 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize);
 FSFILE *file;
 CircularBuffer circBuf;
 unsigned char data[DATA_SIZE];
+//unsigned char * bufferPointer;
 /*
  * 
  */
@@ -53,6 +54,7 @@ int main(void)
     while (OSCCONbits.LOCK != 1) {
     }; /* Wait for PLL to lock*/
 
+//    bufferPointer = NULL;
     Uart2Init(InterruptRoutine);
 
     if (!CB_Init(&circBuf, data, DATA_SIZE)) FATAL_ERROR();
@@ -64,6 +66,10 @@ int main(void)
     int SDConnected = 0;
     while(1)
     {
+//        if (bufferPointer != NULL) { TODO implement this?
+//            CB_WriteMany(&circBuf, bufferPointer, UART2_BUFFER_SIZE, 1); // the 1 is arbitrary
+//            bufferPointer = NULL;
+//        }
         if (SD_IN)
         {
             // if the board was just plugged in try to reinitialize
@@ -97,6 +103,7 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize)
 //    for (i = 0; i < BufferSize; i++) {
 //        Uart2PrintChar(Buffer[i]);
 //    }
-
+//     Set the pointer so we can copy the data in main.
+//    bufferPointer = Buffer;
     CB_WriteMany(&circBuf, Buffer, BufferSize, 1); // the 1 is arbitrary
 }
