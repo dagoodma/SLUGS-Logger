@@ -76,26 +76,20 @@ FSFILE * NewSDInit(char *filename)
  */
 int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
 {
-    if(!MDD_MediaDetect()) {
-        return 0;
-    }
-//    while(!FSInit());
-    
-    char text[25]; // !! debug
+//    char text[25]; // !! debug
     // Calculate the real sector number of our current place in the file.
-    union{
-        DWORD           dword;
-        unsigned int    ints[2];
-    }CSect;
+//    union{
+//        DWORD           dword;
+//        unsigned int    ints[2];
+//    }CSect;
     DWORD CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls)
             + pointer->sec;
     DWORD SectorLimit = Cluster2Sector(pointer->dsk, pointer->ccls)
             + pointer->dsk->SecPerClus;
 
-    CSect.dword = CurrentSector;
-    sprintf(text, "Writing: %X%X\n", CSect.ints[1], CSect.ints[0]);
-    Uart2PrintStr(text);
-    //Uart2PrintStr(sprintf("Writing: %x\n", CurrentSector));
+//    CSect.dword = CurrentSector;
+//    sprintf(text, "Writing: %X%X\n", CSect.ints[1], CSect.ints[0]);
+//    Uart2PrintStr(text);
 
     // Write the data
     int success = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, 0);
@@ -105,7 +99,7 @@ int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
     }
 
     // Check to see if we need to go to a new cluster;
-    //  otherwise, next sector
+    // else, next sector
     if (CurrentSector == SectorLimit - 1) {
         // Set cluster and sector to next cluster in our chain
         if(FILEallocate_new_cluster(pointer, 0)!=CE_GOOD){ // allocate a new cluster
@@ -132,10 +126,9 @@ int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
     NewFileUpdate(pointer);
 
     
-    CSect.dword = CurrentSector;
-    sprintf(text, "Wrote: %X%X\n", CSect.ints[1], CSect.ints[0]);
-    Uart2PrintStr(text);
-    //Uart2PrintStr("Wrote.\n");
+//    CSect.dword = CurrentSector;
+//    sprintf(text, "Wrote: %X%X\n", CSect.ints[1], CSect.ints[0]);
+//    Uart2PrintStr(text);
 
     return 1;
 }

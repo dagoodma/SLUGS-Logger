@@ -6,6 +6,7 @@
  */
 #define UART2_BUFFER_SIZE 512
 #define DATA_SIZE 512*10
+#define SD_IN !SD_CD
 
 #include <stdint.h>
 #include "CircularBuffer.h"
@@ -63,7 +64,7 @@ int main(void)
     int SDConnected = 0;
     while(1)
     {
-        if (MDD_MediaDetect())
+        if (SD_IN)
         {
             // if the board was just plugged in try to reinitialize
             if(!SDConnected) {
