@@ -26,6 +26,7 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize);
 FSFILE *file;
 CircularBuffer circBuf;
 unsigned char data[DATA_SIZE];
+unsigned char fakeInput[UART2_BUFFER_SIZE]; // DEBUG a fake input for the cbuf
 //unsigned char * bufferPointer;
 /*
  * 
@@ -59,6 +60,18 @@ int main(void)
 
     if (!CB_Init(&circBuf, data, DATA_SIZE)) FATAL_ERROR();
 
+    // Generate a fake input to record to the circular buffer
+    // give beginning and end special characters
+    int i;
+    fakeInput[0] = 'A';
+    for (i=1; i<510; i++) {
+        if (i%27 == 26)
+            fakeInput[i] = '\n';
+        else
+            fakeInput[i] = i%27 + 'a';
+    }
+    fakeInput[510] = 'Z';
+    fakeInput[511] = '\n';
     
     Uart2PrintStr("Begin.\n");
     file = NewSDInit("newfile.txt");
@@ -105,5 +118,7 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize)
 //    }
 //     Set the pointer so we can copy the data in main.
 //    bufferPointer = Buffer;
-    CB_WriteMany(&circBuf, Buffer, BufferSize, 1); // the 1 is arbitrary
+
+    CB_WriteMany(&circBuf, &fakeInput, 512, 1); // fake data
+    // CB_WriteMany(&circBuf, Buffer, BufferSize, 1); // the 1 is arbitrary
 }
