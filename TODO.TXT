@@ -1,6 +1,14 @@
 Todo List
 =========
 
--Handle FAT partitions with non-512-byte sectors
+Short Term
+----------
+- Add some flexibility to the UART lib to support various options
+	(more DMA options, no interrupt, direct input, ect)
 
--Update files with correct date/time information or some kind of system
+
+Long Term
+---------
+- Handle FAT partitions with non-512-byte sectors
+
+- Update files with correct date/time information or some kind of system
