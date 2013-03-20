@@ -5,6 +5,7 @@
  * Created on March 14, 2013, 3:50 PM
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <xc.h>
@@ -46,13 +47,12 @@ void main()
 
     Uart2Init(InterruptRoutine);
 
-    int i;
-    unsigned char j;
-    for (i = 0; i < 1000; i++) {
-        for (j = 0; j<26 ; j++) {
-            Uart2PrintChar(j+'a');
+    uint32_t i;
+    uint32_t j;
+    for (i = 0; i < 1; i++) {
+        for (j = 0; j < 512 ; j++) {
+            Uart2PrintChar('a');
         }
-        Uart2PrintChar('\n');
     }
 
     while(1);

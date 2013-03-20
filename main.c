@@ -5,7 +5,7 @@
  * Created on February 12, 2013, 11:17 AM
  */
 #define UART2_BUFFER_SIZE 512
-#define DATA_SIZE 512*10
+#define DATA_SIZE 512*1
 #define SD_IN !SD_CD
 
 #include <stdint.h>
@@ -64,7 +64,8 @@ int main(void)
     // give beginning and end special characters
     int i;
     fakeInput[0] = 'A';
-    for (i=1; i<510; i++) {
+    fakeInput[1] = ' ';
+    for (i=2; i<510; i++) {
         if (i%27 == 26)
             fakeInput[i] = '\n';
         else
@@ -119,6 +120,7 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize)
 //     Set the pointer so we can copy the data in main.
 //    bufferPointer = Buffer;
 
-    CB_WriteMany(&circBuf, &fakeInput, 512, 1); // fake data
-    // CB_WriteMany(&circBuf, Buffer, BufferSize, 1); // the 1 is arbitrary
+    CB_WriteMany(&circBuf, &fakeInput, 512, true); // fake data
+    fakeInput[0] = fakeInput[0]+2;
+    // CB_WriteMany(&circBuf, Buffer, BufferSize, 1); // fail early:true
 }
