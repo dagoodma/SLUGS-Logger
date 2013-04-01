@@ -5,7 +5,7 @@
  * Created on February 12, 2013, 11:17 AM
  */
 #define UART2_BUFFER_SIZE 512
-#define DATA_SIZE 512*1
+#define DATA_SIZE 512*3
 #define SD_IN !SD_CD
 
 #include <stdint.h>
@@ -22,6 +22,9 @@ _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
 _FWDT(FWDTEN_OFF);
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize);
+
+void CircBuffTests();
+int arraysEqual(char * A, char * B);
 
 FSFILE *file;
 CircularBuffer circBuf;
@@ -120,7 +123,44 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize)
 //     Set the pointer so we can copy the data in main.
 //    bufferPointer = Buffer;
 
-    CB_WriteMany(&circBuf, &fakeInput, 512, true); // fake data
-    fakeInput[0] = fakeInput[0]+2;
-    // CB_WriteMany(&circBuf, Buffer, BufferSize, 1); // fail early:true
+//    CB_WriteMany(&circBuf, fakeInput, 512, true); // fake data
+//
+//    if (fakeInput[0] == 'D') fakeInput[0] = '!';
+//    else fakeInput[0] = fakeInput[0]+1;
+     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
+}
+
+void CircBuffTests()
+{
+    // Create data to put into the circular buffer
+    char testData[512];
+    testData[0] = 'A';
+    testData[1] = ' ';
+    int i;
+    for (i=2; i<510; i++) {
+        if (i%27 == 26)
+            testData[i] = '\n';
+        else
+            testData[i] = i%27 + 'a';
+    }
+    testData[510] = 'Z';
+    testData[511] = '\n';
+
+    char outData[512];
+
+    CB_WriteMany(&circBuf, testData, 512, true);
+    CB_PeekMany(&circBuf, outData, 512);
+
+    if (!arraysEqual(testData, outData)) FATAL_ERROR();
+}
+
+int arraysEqual(char * A, char * B)
+{
+    if (sizeof(A) != sizeof(B)) return false;
+
+    unsigned int i;
+    for (i = 0; i<sizeof(A); i++) {
+        if (A[i] != B[i]) return false;
+    }
+    return true;
 }

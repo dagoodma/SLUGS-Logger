@@ -49,10 +49,16 @@ void main()
 
     uint32_t i;
     uint32_t j;
-    for (i = 0; i < 1; i++) {
-        for (j = 0; j < 512 ; j++) {
-            Uart2PrintChar('a');
+    for (i = 0; i < 20; i++) {
+        Uart2PrintChar('A' + i);
+        for (j = 1; j < 511 ; j++) {
+            if(j%27 == 26) {
+                Uart2PrintChar('\n');
+            } else {
+                Uart2PrintChar('a'+j%27);
+            }
         }
+        Uart2PrintChar('\n');
     }
 
     while(1);

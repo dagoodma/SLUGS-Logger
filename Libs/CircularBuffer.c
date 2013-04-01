@@ -26,7 +26,7 @@
  * has been written for use with the dsPIC33f, but has been tested on x86.
  *
  * Unit testing has been completed on x86 by compiling with the UNIT_TEST_CIRCULAR_BUFFER macro.
- * With gcc: `gcc CircularBuffer.c -DUNIT_TEST_CIRCULAR_BUFFER -Wall`
+ * With gcc: `gcc CircularBuffer.c -DUNIT_TEST_CIRCULAR_BUFFER -Wall -g`
  */
 #include "CircularBuffer.h"
 
@@ -219,7 +219,7 @@ int CB_PeekMany (const CircularBuffer *b, void *outData, uint16_t size)
 
 int CB_Remove(CircularBuffer *b, uint16_t size){
 	// If there are more elements in the buffer.
-	if (b->dataSize >= size) {
+	if (b->dataSize > size) {
 		// Checks to see if the buffer will wrap around.
 		if ((b->staticSize - b->readIndex) < size) {
 			b-> readIndex = size - (b->staticSize - b->readIndex);
@@ -273,7 +273,7 @@ int TestStructEqual(const TestStruct *a, const TestStruct *b)
  *
  * To run (assuming all files in the same directory and that's your current directory):
  * ```
- * $ gcc CircularBuffer.c -DUNIT_TEST_CIRCULAR_BUFFER
+ * $ gcc CircularBuffer.c -DUNIT_TEST_CIRCULAR_BUFFER -Wall -g
  * $ a.out
  * Running unit tests.
  * All tests passed.
@@ -821,6 +821,56 @@ int main()
 		CB_PeekMany(&c, (uint8_t*)&peekTest, sizeof(TestStruct));
 		assert(TestStructEqual(&t1, &peekTest));
 	}
+        {
+            // 1 Apr 2013 - Fails as of 1:25
+            CircularBuffer circBuf;
+            unsigned char data[20];
+            unsigned char testIn[20] = "Hey There This Test";
+            unsigned char testOut[20];
+
+            // Initialize the circular buffer
+            assert(CB_Init(&circBuf, data, 20));
+            assert(circBuf.readIndex == circBuf.writeIndex);
+            assert(circBuf.readIndex == 0);
+            assert(circBuf.writeIndex == 0);
+
+            // Write and read to the buffer multiple times
+            CB_WriteMany(&circBuf, testIn, 20, true);
+            assert(circBuf.readIndex == circBuf.writeIndex);
+            assert(circBuf.readIndex == 0);
+            assert(circBuf.writeIndex == 0);
+
+            CB_PeekMany(&circBuf, testOut, 20);
+            assert(circBuf.readIndex == circBuf.writeIndex);
+            assert(circBuf.readIndex == 0);
+            assert(circBuf.writeIndex == 0);
+
+            CB_Remove(&circBuf, 20);
+            assert(circBuf.readIndex == circBuf.writeIndex);
+            assert(circBuf.readIndex == 0);
+            assert(circBuf.writeIndex == 0);
+
+            assert(!memcmp(testIn, testOut, 20));
+
+            
+            CB_WriteMany(&circBuf, testIn, 20, true);
+            assert(circBuf.readIndex == circBuf.writeIndex);
+            assert(circBuf.readIndex == 0);
+            assert(circBuf.writeIndex == 0);
+
+            CB_PeekMany(&circBuf, testOut, 20);
+            assert(circBuf.readIndex == circBuf.writeIndex);
+            assert(circBuf.readIndex == 0);
+            assert(circBuf.writeIndex == 0);
+
+            CB_Remove(&circBuf, 20);
+            assert(circBuf.readIndex == circBuf.writeIndex);
+            assert(circBuf.readIndex == 0);
+            assert(circBuf.writeIndex == 0);
+
+            assert(!memcmp(testIn, testOut, 20));
+            
+        }
 
 	printf("All tests passed.\n");
 
