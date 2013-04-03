@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <xc.h>
 #include "uart2.h"
+#include "book.h"
 
 
 _FOSCSEL(FNOSC_FRC);
@@ -47,18 +48,9 @@ void main()
 
     Uart2Init(InterruptRoutine);
 
-    uint32_t i;
-    uint32_t j;
-    for (i = 0; i < 20; i++) {
-        Uart2PrintChar('A' + i);
-        for (j = 1; j < 511 ; j++) {
-            if(j%27 == 26) {
-                Uart2PrintChar('\n');
-            } else {
-                Uart2PrintChar('a'+j%27);
-            }
-        }
-        Uart2PrintChar('\n');
+    uint32_t i = 0;
+    while(book[i] != '\0') {
+        Uart2PrintChar(book[i++]);
     }
 
     while(1);
