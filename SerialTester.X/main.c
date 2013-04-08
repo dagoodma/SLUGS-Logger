@@ -18,6 +18,7 @@ _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
 _FWDT(FWDTEN_OFF);
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize);
+char checksum(char * data, int dataSize);
 
 /*
  * 
@@ -46,14 +47,40 @@ void main()
     while (OSCCONbits.LOCK != 1) {
     }; /* Wait for PLL to lock*/
 
+    // configure the button as input
+    TRISDbits.TRISD6 = 1;
+    
+    char toSend[512];
+    int i;
+    for (i=0; i<512; i++) {
+        toSend[i] = (char)i;
+    }
+    
     Uart2Init(InterruptRoutine);
 
-    uint32_t i = 0;
-    while(book[i] != '\0') {
-        Uart2PrintChar(book[i++]);
-    }
+//    uint32_t i = 0;
+//    while(book[i] != '\0') {
+//        Uart2PrintChar(book[i++]);
+//    }
 
-    while(1);
+    while(PORTDbits.RD6);
+    while(1) {
+        int i;
+        for(i = 0; i < sizeof(toSend); i++) {
+            Uart2PrintChar(toSend[i]);
+        }
+    }
 }
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize){}
+
+// calculates a basic byte Xor checksum of some data
+char checksum(char * data, int dataSize)
+{
+    char sum = 0;
+    int i;
+    for(i = 0; i < dataSize; i++) {
+        sum ^= data[i];
+    }
+    return sum;
+}

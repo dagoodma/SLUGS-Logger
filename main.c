@@ -5,7 +5,8 @@
  * Created on February 12, 2013, 11:17 AM
  */
 #define UART2_BUFFER_SIZE 512
-#define DATA_SIZE 512*3
+#define SD_SECTOR_SIZE 512
+#define CB_SIZE 512*3
 #define SD_IN !SD_CD
 
 #include <stdint.h>
@@ -22,14 +23,13 @@ _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
 _FWDT(FWDTEN_OFF);
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize);
-
-void CircBuffTests();
-int arraysEqual(char * A, char * B);
+char checksum(unsigned char * data, int dataSize);
 
 FSFILE *file;
 CircularBuffer circBuf;
-unsigned char data[DATA_SIZE];
+unsigned char cbData[CB_SIZE];
 unsigned char fakeInput[UART2_BUFFER_SIZE]; // DEBUG a fake input for the cbuf
+char goodSum; // DEBUG
 //unsigned char * bufferPointer;
 /*
  * 
@@ -61,21 +61,16 @@ int main(void)
 //    bufferPointer = NULL;
     Uart2Init(InterruptRoutine);
 
-    if (!CB_Init(&circBuf, data, DATA_SIZE)) FATAL_ERROR();
+    if (!CB_Init(&circBuf, cbData, CB_SIZE)) FATAL_ERROR();
 
     // Generate a fake input to record to the circular buffer
     // give beginning and end special characters
+    unsigned char goodData[512];
     int i;
-    fakeInput[0] = 'A';
-    fakeInput[1] = ' ';
-    for (i=2; i<510; i++) {
-        if (i%27 == 26)
-            fakeInput[i] = '\n';
-        else
-            fakeInput[i] = i%27 + 'a';
+    for (i=0; i<512; i++) {
+        goodData[i] = (char)i;
     }
-    fakeInput[510] = 'Z';
-    fakeInput[511] = '\n';
+    goodSum = checksum(goodData, 512);
     
     Uart2PrintStr("Begin.\n");
     file = NewSDInit("newfile.txt");
@@ -99,11 +94,14 @@ int main(void)
             }
             // When we are connected and initialized, poll the buffer, if there
             // is data, write it.
-            unsigned char outData[UART2_BUFFER_SIZE];
-            if (CB_PeekMany(&circBuf, outData, UART2_BUFFER_SIZE)){
+            unsigned char outData[SD_SECTOR_SIZE];
+            if (CB_PeekMany(&circBuf, outData, SD_SECTOR_SIZE)){
                 if(NewSDWriteSector(file, outData)){
-                    // Remove the data we just wrote.
-                    CB_Remove(&circBuf, UART2_BUFFER_SIZE);
+                    // Remove the data we just written.
+                    if(checksum(outData, 512) != goodSum) {
+                        FATAL_ERROR();
+                    }
+                    CB_Remove(&circBuf, SD_SECTOR_SIZE);
                 }
             }
         } else {
@@ -127,40 +125,19 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize)
 //
 //    if (fakeInput[0] == 'D') fakeInput[0] = '!';
 //    else fakeInput[0] = fakeInput[0]+1;
-     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
+    if(checksum(Buffer, 512) != goodSum) {
+        FATAL_ERROR();
+    }
+    CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
 }
 
-void CircBuffTests()
+// calculates a basic byte Xor checksum of some data
+char checksum(unsigned char * data, int dataSize)
 {
-    // Create data to put into the circular buffer
-    char testData[512];
-    testData[0] = 'A';
-    testData[1] = ' ';
+    char sum = 0;
     int i;
-    for (i=2; i<510; i++) {
-        if (i%27 == 26)
-            testData[i] = '\n';
-        else
-            testData[i] = i%27 + 'a';
+    for(i = 0; i < dataSize; i++) {
+        sum ^= data[i];
     }
-    testData[510] = 'Z';
-    testData[511] = '\n';
-
-    char outData[512];
-
-    CB_WriteMany(&circBuf, testData, 512, true);
-    CB_PeekMany(&circBuf, outData, 512);
-
-    if (!arraysEqual(testData, outData)) FATAL_ERROR();
-}
-
-int arraysEqual(char * A, char * B)
-{
-    if (sizeof(A) != sizeof(B)) return false;
-
-    unsigned int i;
-    for (i = 0; i<sizeof(A); i++) {
-        if (A[i] != B[i]) return false;
-    }
-    return true;
+    return sum;
 }
