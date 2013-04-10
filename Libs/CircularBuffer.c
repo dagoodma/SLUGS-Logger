@@ -217,7 +217,7 @@ int CB_Remove(CircularBuffer *b, uint16_t size){
 	// If there are more elements in the buffer.
 	if (b->dataSize > size) {
 		// Checks to see if the buffer will wrap around.
-		if ((b->staticSize - b->readIndex) < size) {
+		if ((b->staticSize - b->readIndex) <= size) { // April 10 - changed < size to <= size
 			b-> readIndex = size - (b->staticSize - b->readIndex);
 		} else {
 			// If the buffer will not wrap around size is added to read index.
@@ -818,7 +818,7 @@ int main()
 		assert(TestStructEqual(&t1, &peekTest));
 	}
         {
-            // 1 Apr 2013 - Fails as of 1:25
+            // 1 Apr 2013
             CircularBuffer circBuf;
             unsigned char data[20];
             unsigned char testIn[20] = "Hey There This Test";
@@ -915,6 +915,54 @@ int main()
             assert(circBuf.writeIndex == 7);
 
             assert(!memcmp(testIn, testOut, 20));
+        }
+        {
+            // 10 April 2013
+            #define BUF_SIZE 512
+            CircularBuffer circBuf;
+            unsigned char data[BUF_SIZE*3];
+            unsigned char testIn[BUF_SIZE];
+            unsigned char testOut[BUF_SIZE];
+
+            int i;
+            for (i = 0; i<BUF_SIZE; i++) {
+                testIn[i] = (char)i;
+            }
+
+            for (i = 0; i<10000; i++) {
+                // Initialize the circular buffer
+                assert(CB_Init(&circBuf, data, 20));
+
+                CB_WriteMany(&circBuf, testIn, BUF_SIZE, true);
+                assert(circBuf.readIndex != circBuf.staticSize);
+                assert(circBuf.readIndex != BUF_SIZE);
+                CB_PeekMany(&circBuf, testOut, BUF_SIZE);
+                assert(circBuf.readIndex != circBuf.staticSize);
+                assert(circBuf.readIndex != BUF_SIZE);
+                CB_Remove(&circBuf, BUF_SIZE);
+                assert(circBuf.readIndex != circBuf.staticSize);
+                assert(circBuf.readIndex != BUF_SIZE);
+
+                CB_WriteMany(&circBuf, testIn, BUF_SIZE, true);
+                assert(circBuf.readIndex != circBuf.staticSize);
+                assert(circBuf.readIndex != BUF_SIZE);
+                CB_PeekMany(&circBuf, testOut, BUF_SIZE);
+                assert(circBuf.readIndex != circBuf.staticSize);
+                assert(circBuf.readIndex != BUF_SIZE);
+                CB_Remove(&circBuf, BUF_SIZE);
+                assert(circBuf.readIndex != circBuf.staticSize);
+                assert(circBuf.readIndex != BUF_SIZE);
+
+                CB_WriteMany(&circBuf, testIn, BUF_SIZE, true);
+                assert(circBuf.readIndex != circBuf.staticSize);
+                assert(circBuf.readIndex != BUF_SIZE);
+                CB_PeekMany(&circBuf, testOut, BUF_SIZE);
+                assert(circBuf.readIndex != circBuf.staticSize);
+                assert(circBuf.readIndex != BUF_SIZE);
+                CB_Remove(&circBuf, BUF_SIZE);
+                assert(circBuf.readIndex != circBuf.staticSize);
+                assert(circBuf.readIndex != BUF_SIZE);
+            }
         }
 
 	printf("All tests passed.\n");

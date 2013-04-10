@@ -31,6 +31,7 @@ unsigned char cbData[CB_SIZE];
 unsigned char fakeInput[UART2_BUFFER_SIZE]; // DEBUG a fake input for the cbuf
 char goodSum; // DEBUG
 //unsigned char * bufferPointer;
+
 /*
  * 
  */
@@ -55,8 +56,7 @@ int main(void)
     __builtin_write_OSCCONL(0x01); // Start clock switching
     while (OSCCONbits.COSC != 0b011); // Wait for Clock switch to occur
 
-    while (OSCCONbits.LOCK != 1) {
-    }; /* Wait for PLL to lock*/
+    while (OSCCONbits.LOCK != 1) {}; /* Wait for PLL to lock*/
 
 //    bufferPointer = NULL;
     Uart2Init(InterruptRoutine);
@@ -96,12 +96,21 @@ int main(void)
             // is data, write it.
             unsigned char outData[SD_SECTOR_SIZE];
             if (CB_PeekMany(&circBuf, outData, SD_SECTOR_SIZE)){
+                if(circBuf.readIndex == CB_SIZE) {
+                    FATAL_ERROR();
+                }
                 if(NewSDWriteSector(file, outData)){
-                    // Remove the data we just written.
                     if(checksum(outData, 512) != goodSum) {
                         FATAL_ERROR();
                     }
+                    // Remove the data we just written.
+                    if(circBuf.readIndex == CB_SIZE) {
+                        while(1);
+                    }
                     CB_Remove(&circBuf, SD_SECTOR_SIZE);
+                    if(circBuf.readIndex == CB_SIZE) {
+                        while(1);
+                    }
                 }
             }
         } else {
@@ -112,23 +121,16 @@ int main(void)
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
-    // When one buffer has been filled
-    // Print both buffers (sorta echo)
-//    int i;
-//    for (i = 0; i < BufferSize; i++) {
-//        Uart2PrintChar(Buffer[i]);
-//    }
-//     Set the pointer so we can copy the data in main.
-//    bufferPointer = Buffer;
-
-//    CB_WriteMany(&circBuf, fakeInput, 512, true); // fake data
-//
-//    if (fakeInput[0] == 'D') fakeInput[0] = '!';
-//    else fakeInput[0] = fakeInput[0]+1;
     if(checksum(Buffer, 512) != goodSum) {
         FATAL_ERROR();
     }
+    if(circBuf.readIndex == CB_SIZE) {
+        FATAL_ERROR();
+    }
     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
+    if(circBuf.readIndex == CB_SIZE) {
+        FATAL_ERROR();
+    }
 }
 
 // calculates a basic byte Xor checksum of some data
