@@ -23,8 +23,7 @@ char checksum(char * data, int dataSize);
 /*
  * 
  */
-void main()
-{
+void main() {
     // Watchdog Timer Enabled/disabled by user software
     // (LPRC can be disabled by clearing SWDTEN bit in RCON registe
 
@@ -49,37 +48,38 @@ void main()
 
     // configure the button as input
     TRISDbits.TRISD6 = 1;
-    
+
     char toSend[512];
     int i;
-    for (i=0; i<512; i++) {
-        toSend[i] = (char)i;
+    for (i = 0; i < 512; i++) {
+        toSend[i] = (char) i;
     }
-    
+
     Uart2Init(InterruptRoutine);
 
-//    uint32_t i = 0;
-//    while(book[i] != '\0') {
-//        Uart2PrintChar(book[i++]);
-//    }
+    while (PORTDbits.RD6);
 
-    while(PORTDbits.RD6);
-    while(1) {
-        int i;
-        for(i = 0; i < sizeof(toSend); i++) {
-            Uart2PrintChar(toSend[i]);
+    uint32_t j = 0;
+    for (i = 0; i < 1080; i++) {
+        j = 0;
+        while (book[j] != '\0') {
+            Uart2PrintChar(book[j++]);
         }
+    }
+
+    while (1) {
     }
 }
 
-void InterruptRoutine(unsigned char *Buffer, int BufferSize){}
+void InterruptRoutine(unsigned char *Buffer, int BufferSize) {
+}
 
 // calculates a basic byte Xor checksum of some data
-char checksum(char * data, int dataSize)
-{
+
+char checksum(char * data, int dataSize) {
     char sum = 0;
     int i;
-    for(i = 0; i < dataSize; i++) {
+    for (i = 0; i < dataSize; i++) {
         sum ^= data[i];
     }
     return sum;

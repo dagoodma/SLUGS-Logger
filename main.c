@@ -28,9 +28,6 @@ char checksum(unsigned char * data, int dataSize);
 FSFILE *file;
 CircularBuffer circBuf;
 unsigned char cbData[CB_SIZE];
-unsigned char fakeInput[UART2_BUFFER_SIZE]; // DEBUG a fake input for the cbuf
-char goodSum; // DEBUG
-//unsigned char * bufferPointer;
 
 /*
  * 
@@ -58,30 +55,16 @@ int main(void)
 
     while (OSCCONbits.LOCK != 1) {}; /* Wait for PLL to lock*/
 
-//    bufferPointer = NULL;
     Uart2Init(InterruptRoutine);
 
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) FATAL_ERROR();
-
-    // Generate a fake input to record to the circular buffer
-    // give beginning and end special characters
-    unsigned char goodData[512];
-    int i;
-    for (i=0; i<512; i++) {
-        goodData[i] = (char)i;
-    }
-    goodSum = checksum(goodData, 512);
     
-    Uart2PrintStr("Begin.\n");
+//    Uart2PrintStr("Begin.\n");
     file = NewSDInit("newfile.txt");
 
     int SDConnected = 0;
     while(1)
     {
-//        if (bufferPointer != NULL) { TODO implement this?
-//            CB_WriteMany(&circBuf, bufferPointer, UART2_BUFFER_SIZE, 1); // the 1 is arbitrary
-//            bufferPointer = NULL;
-//        }
         if (SD_IN)
         {
             // if the board was just plugged in try to reinitialize
@@ -97,9 +80,6 @@ int main(void)
             unsigned char outData[SD_SECTOR_SIZE];
             if (CB_PeekMany(&circBuf, outData, SD_SECTOR_SIZE)){
                 if(NewSDWriteSector(file, outData)){
-                    if(checksum(outData, 512) != goodSum) {
-                        FATAL_ERROR();
-                    }
                     // Remove the data we just written.
                     CB_Remove(&circBuf, SD_SECTOR_SIZE);
                 }
@@ -112,9 +92,6 @@ int main(void)
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
-    if(checksum(Buffer, 512) != goodSum) {
-        FATAL_ERROR();
-    }
     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
 }
 
