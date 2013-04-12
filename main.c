@@ -96,21 +96,12 @@ int main(void)
             // is data, write it.
             unsigned char outData[SD_SECTOR_SIZE];
             if (CB_PeekMany(&circBuf, outData, SD_SECTOR_SIZE)){
-                if(circBuf.readIndex == CB_SIZE) {
-                    FATAL_ERROR();
-                }
                 if(NewSDWriteSector(file, outData)){
                     if(checksum(outData, 512) != goodSum) {
                         FATAL_ERROR();
                     }
                     // Remove the data we just written.
-                    if(circBuf.readIndex == CB_SIZE) {
-                        while(1);
-                    }
                     CB_Remove(&circBuf, SD_SECTOR_SIZE);
-                    if(circBuf.readIndex == CB_SIZE) {
-                        while(1);
-                    }
                 }
             }
         } else {
@@ -124,13 +115,7 @@ void InterruptRoutine(unsigned char *Buffer, int BufferSize)
     if(checksum(Buffer, 512) != goodSum) {
         FATAL_ERROR();
     }
-    if(circBuf.readIndex == CB_SIZE) {
-        FATAL_ERROR();
-    }
     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
-    if(circBuf.readIndex == CB_SIZE) {
-        FATAL_ERROR();
-    }
 }
 
 // calculates a basic byte Xor checksum of some data

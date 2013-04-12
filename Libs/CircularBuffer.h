@@ -192,7 +192,8 @@ int CB_PeekMany(const CircularBuffer *b, void *outData, uint16_t size);
  * The function CB_Remove removes size number of items from the passed in circular buffer.
  * b is a pointer to the CircularBuffer struct and size is the number of elements to be removed.
  * If there are not size elements currently in the buffer, the buffer is emptied. The function
- * will always return SUCCESS.
+ * will return false if there was less data in the buffer than was attempted to
+ * be removed, true otherwise.
  *
  * This function is useful for removing data that has already been CB_Peek()d at. An example is with
  * the ECAN peripheral on the dsPICs where I CB_PeekMany() off entire CAN message structs:

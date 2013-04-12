@@ -214,14 +214,14 @@ int CB_PeekMany (const CircularBuffer *b, void *outData, uint16_t size)
 }
 
 int CB_Remove(CircularBuffer *b, uint16_t size){
-	// If there are more elements in the buffer.
-	if (b->dataSize > size) {
+	// If there are more elements in the buffer than are being removed.
+	if (b->dataSize >= size) {
 		// Checks to see if the buffer will wrap around.
 		if ((b->staticSize - b->readIndex) <= size) { // April 10 - changed < size to <= size
-			b-> readIndex = size - (b->staticSize - b->readIndex);
+			b-> readIndex = b->readIndex + size - b->staticSize;
 		} else {
 			// If the buffer will not wrap around size is added to read index.
-			b->readIndex = b->readIndex + size;
+			b-> readIndex = b->readIndex + size;
 		}
 		b->dataSize -= size;
 		return true;
@@ -230,7 +230,7 @@ int CB_Remove(CircularBuffer *b, uint16_t size){
 	else {
 		b->readIndex = b->writeIndex;
 		b->dataSize = 0;
-		return true;
+		return false;
 	}
 }
 
