@@ -60,7 +60,7 @@ void main() {
     while (PORTDbits.RD6);
 
     uint32_t j = 0;
-    for (i = 0; i < 1080; i++) {
+    for (i = 0; i < 720; i++) {
         j = 0;
         while (book[j] != '\0') {
             Uart2PrintChar(book[j++]);

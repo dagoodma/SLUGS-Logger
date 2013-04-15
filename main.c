@@ -6,7 +6,7 @@
  */
 #define UART2_BUFFER_SIZE 512
 #define SD_SECTOR_SIZE 512
-#define CB_SIZE 512*3
+#define CB_SIZE 512*35
 #define SD_IN !SD_CD
 
 #include <stdint.h>
