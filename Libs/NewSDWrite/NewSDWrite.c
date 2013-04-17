@@ -50,17 +50,14 @@ FSFILE * NewSDInit(char *filename)
 {
     FSFILE * pointer = NULL;
 
-    while (!MDD_MediaDetect()); // !! make this smarter
+    while (!MDD_MediaDetect()); // TODO make this smarter
     while (!FSInit());
 
     // Open a new file
     while (pointer == NULL) pointer = FSfopen(filename, "w");
 
     // Initialize data for NewSDWriteSector
-    pointer->ccls = pointer->cluster;
-
-    // Trying something:
-//    FILEallocate_new_cluster(pointer, 0);
+    pointer->ccls = pointer->cluster;;
 
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;

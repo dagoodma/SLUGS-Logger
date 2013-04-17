@@ -9,25 +9,36 @@
 #define CB_SIZE 512*35
 #define SD_IN !SD_CD
 
+#define FCY 40000000
+#define INT_P_SEC 1
+#define T2_PRESCALE FCY / INT_P_SEC - 1
+
 #include <stdint.h>
 #include "CircularBuffer.h"
 #include <xc.h>
+// The Uartx.h files need to be included before stddef.h
 #include "Uart2.h"
+#include "Uart1.h"
 #include <stddef.h>
 #include "Libs/Microchip/Include/MDD File System/FSIO.h"
 #include "NewSDWrite.h"
 #include "Node.h"
+#include "Timer2.h"
 
 _FOSCSEL(FNOSC_FRC);
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
 _FWDT(FWDTEN_OFF);
 
-void InterruptRoutine(unsigned char *Buffer, int BufferSize);
-char checksum(unsigned char * data, int dataSize);
+void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize);
+void Timer2InterruptRoutine(void);
 
 FSFILE *file;
 CircularBuffer circBuf;
 unsigned char cbData[CB_SIZE];
+
+// for diagnostics
+uint32_t timeStamp;
+uint32_t maxBuffer;
 
 /*
  * 
@@ -55,14 +66,18 @@ int main(void)
 
     while (OSCCONbits.LOCK != 1) {}; /* Wait for PLL to lock*/
 
-    Uart2Init(InterruptRoutine);
+    Uart2Init(Uart2InterruptRoutine);
+    Uart1Init(BRGVAL);
+
+    timeStamp = 0;
+    Timer2Init(&Timer2InterruptRoutine, (uint16_t)T2_PRESCALE);
 
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) FATAL_ERROR();
     
-//    Uart2PrintStr("Begin.\n");
     file = NewSDInit("newfile.txt");
 
     int SDConnected = 0;
+    maxBuffer = 0;
     while(1)
     {
         if (SD_IN)
@@ -90,18 +105,15 @@ int main(void)
     }
 }
 
-void InterruptRoutine(unsigned char *Buffer, int BufferSize)
+void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
+    if(circBuf.dataSize >= maxBuffer) maxBuffer = circBuf.dataSize;
 }
 
-// calculates a basic byte Xor checksum of some data
-char checksum(unsigned char * data, int dataSize)
+void Timer2InterruptRoutine(void)
 {
-    char sum = 0;
-    int i;
-    for(i = 0; i < dataSize; i++) {
-        sum ^= data[i];
-    }
-    return sum;
+    timeStamp += 1;
+    Uart1WriteData(&timeStamp, sizeof(timeStamp));
+    Uart1WriteData(&maxBuffer, sizeof(maxBuffer));
 }
