@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <xc.h>
-#include "uart2.h"
+#include "Uart2.h"
 #include "book.h"
 
 
