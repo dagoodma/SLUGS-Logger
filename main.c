@@ -10,8 +10,8 @@
 #define SD_IN !SD_CD
 
 #define FCY 40000000
-#define INT_P_SEC 1
-#define T2_PRESCALE FCY / INT_P_SEC - 1
+#define INT_P_MIN 1
+#define T2_PRESCALE FCY / INT_P_MIN * 60 - 1
 
 #include <stdint.h>
 #include "CircularBuffer.h"
@@ -39,6 +39,7 @@ unsigned char cbData[CB_SIZE];
 // for diagnostics
 uint32_t timeStamp;
 uint32_t maxBuffer;
+uint32_t latestMaxBuffer;
 
 /*
  * 
@@ -78,6 +79,7 @@ int main(void)
 
     int SDConnected = 0;
     maxBuffer = 0;
+    latestMaxBuffer = 0;
     while(1)
     {
         if (SD_IN)
@@ -109,11 +111,19 @@ void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
     if(circBuf.dataSize >= maxBuffer) maxBuffer = circBuf.dataSize;
+    if(circBuf.dataSize >= latestMaxBuffer) latestMaxBuffer = circBuf.dataSize;
 }
 
 void Timer2InterruptRoutine(void)
 {
     timeStamp += 1;
+
+    Uart1WriteByte(0x11);
+    Uart1WriteByte(0x22);
+    Uart1WriteByte(0x33);
+    Uart1WriteByte(0x44);
     Uart1WriteData(&timeStamp, sizeof(timeStamp));
+    Uart1WriteData(&latestMaxBuffer, sizeof(latestMaxBuffer));
     Uart1WriteData(&maxBuffer, sizeof(maxBuffer));
+    latestMaxBuffer = 0;
 }
