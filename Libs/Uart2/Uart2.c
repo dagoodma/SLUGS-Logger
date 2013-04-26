@@ -16,7 +16,7 @@ void (*InterruptCallback)(unsigned char *, int);
  * A user-defined function. It is called when the DMA has filled up a ping-pong
  * buffer. First argument is a pointer the the buffer. Second is buffer size (int).
  */
-void Uart2Init(void (*Callback)(unsigned char *, int))
+void Uart2Init(int baudRate, void (*Callback)(unsigned char *, int))
 { // Just sit and spin with this. It's all with interrupts. (see lower)
 	InterruptCallback = Callback;
 
@@ -24,7 +24,7 @@ void Uart2Init(void (*Callback)(unsigned char *, int))
 	U2MODEbits.PDSEL = 0; // No Parity, 8-data bits
 	U2MODEbits.ABAUD = 0; // Auto-Baud Disabled
 
-	U2BRG = BRGVAL; // Buad rate;
+	U2BRG = (int)((unsigned long)FCY / baudRate / 16); // Buad rate;
 
 	U2STAbits.UTXISEL0 = 0; // Interrupt after one Tx character is transmitted
 	U2STAbits.UTXISEL1 = 0;

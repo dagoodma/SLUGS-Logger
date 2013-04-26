@@ -6,6 +6,10 @@
 #include "NewSDWrite.h"
 #include "Uart2.h"
 #include <stdio.h>
+#include "Node.h"
+
+#define CONFIG_READ_SIZE 11
+#define FILE_NAME "newfile.txt"
 
 // Directory entry structure
 typedef struct
@@ -40,29 +44,41 @@ BYTE flushData (void);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 
+FSFILE * filePointer;
+
 /**
- * Initalizes filesystems and returns a file structure for use with
- * NewSDWriteSector.
- * @param filename A string with the filename (name.ext)
- * @return A file structure
+ * New functionality: Reads the config file, 
+ * @return Buad rate
  */
-FSFILE * NewSDInit(char *filename)
+int NewSDInit()
 {
-    FSFILE * pointer = NULL;
+    FSFILE *configFile = NULL;
+    char configText[CONFIG_READ_SIZE + 1];
+    int baudRate;
+
+    filePointer = NULL;
 
     while (!MDD_MediaDetect()); // TODO make this smarter
     while (!FSInit());
 
+    // Open then read the config file, null terminate the config text string
+    while (configFile == NULL) configFile = FSfopen("CONFIG.TXT", "r"); // open the file
+    if( CONFIG_READ_SIZE != FSfread(configText, 1, CONFIG_READ_SIZE, configFile)) FATAL_ERROR();
+    configText[CONFIG_READ_SIZE] = '\0';
+
+    // read baud rate
+    sscanf(configText, "BAUD %d", &baudRate);
+
     // Open a new file
-    while (pointer == NULL) pointer = FSfopen(filename, "w");
+    while (filePointer == NULL) filePointer = FSfopen(FILE_NAME, "w");
 
     // Initialize data for NewSDWriteSector
-    pointer->ccls = pointer->cluster;;
+    filePointer->ccls = filePointer->cluster;;
 
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;
-    NewFileUpdate(pointer);
-    return pointer;
+    NewFileUpdate(filePointer);
+    return baudRate;
 }
 
 /**
@@ -71,7 +87,7 @@ FSFILE * NewSDInit(char *filename)
  * @param outbuf An array of data (BYTES_PER_SECTOR in legnth)
  * @return 1 if successful, 0 otherwise. 
  */
-int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
+int NewSDWriteSector(unsigned char outbuf[BYTES_PER_SECTOR])
 {
 //    char text[25]; // !! debug
     // Calculate the real sector number of our current place in the file.
@@ -79,10 +95,10 @@ int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
 //        DWORD           dword;
 //        unsigned int    ints[2];
 //    }CSect;
-    DWORD CurrentSector = Cluster2Sector(pointer->dsk, pointer->ccls)
-            + pointer->sec;
-    DWORD SectorLimit = Cluster2Sector(pointer->dsk, pointer->ccls)
-            + pointer->dsk->SecPerClus;
+    DWORD CurrentSector = Cluster2Sector(filePointer->dsk, filePointer->ccls)
+            + filePointer->sec;
+    DWORD SectorLimit = Cluster2Sector(filePointer->dsk, filePointer->ccls)
+            + filePointer->dsk->SecPerClus;
 
 //    CSect.dword = CurrentSector;
 //    sprintf(text, "Writing: %X%X\n", CSect.ints[1], CSect.ints[0]);
@@ -99,28 +115,28 @@ int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR])
     // else, next sector
     if (CurrentSector == SectorLimit - 1) {
         // Set cluster and sector to next cluster in our chain
-        if(FILEallocate_new_cluster(pointer, 0)!=CE_GOOD){ // allocate a new cluster
+        if(FILEallocate_new_cluster(filePointer, 0)!=CE_GOOD){ // allocate a new cluster
             // !! Also sets ccls to the new cluster
             while(1);
         }
-        pointer->sec = 0;
+        filePointer->sec = 0;
     } else {
-        pointer->sec++;
+        filePointer->sec++;
     }
 
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;
 
     // save off the positon
-    pointer->pos = BYTES_PER_SECTOR-1; // current position in sector (bytes)
+    filePointer->pos = BYTES_PER_SECTOR-1; // current position in sector (bytes)
 
     // save off the seek
-    pointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
+    filePointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
 
     // now the new size
     //  #Problem: This might not be accurate
-    pointer->size += BYTES_PER_SECTOR; // size of file (bytes)
-    NewFileUpdate(pointer);
+    filePointer->size += BYTES_PER_SECTOR; // size of file (bytes)
+    NewFileUpdate(filePointer);
 
     
 //    CSect.dword = CurrentSector;

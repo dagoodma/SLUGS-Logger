@@ -1,6 +1,9 @@
 #ifndef NEWSDWRITE_H
 #define	NEWSDWRITE_H
 
+#include "Libs/Microchip/Include/MDD File System/FSIO.h"
+
+
 // this cannot be greater than the number of sectors in a cluster
 #define TOTAL_SECTORS 80L
 #define BYTES_PER_SECTOR 512L
@@ -11,7 +14,7 @@
  * @param filename A string with the filename (name.ext)
  * @return A file structure
  */
-FSFILE * NewSDInit(char *filename);
+int NewSDInit();
 
 /**
  * Writes the data in outbuf to the file (pointer)
@@ -25,6 +28,6 @@ void NewFileUpdate(FSFILE * pointer);
  * Mimics FSfileClose to write file info to the SD card.
  * @param fo The file to update
  */
-int NewSDWriteSector(FSFILE *pointer, unsigned char outbuf[BYTES_PER_SECTOR]);
+int NewSDWriteSector(unsigned char outbuf[BYTES_PER_SECTOR]);
 
 #endif

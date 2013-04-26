@@ -32,9 +32,9 @@ _FWDT(FWDTEN_OFF);
 void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize);
 void Timer2InterruptRoutine(void);
 
-FSFILE *file;
 CircularBuffer circBuf;
 unsigned char cbData[CB_SIZE];
+
 
 // for diagnostics
 uint32_t timeStamp;
@@ -68,15 +68,13 @@ int main(void)
 
     while (OSCCONbits.LOCK != 1) {}; /* Wait for PLL to lock*/
 
-    Uart2Init(Uart2InterruptRoutine);
+    Uart2Init(NewSDInit(), Uart2InterruptRoutine);
     Uart1Init(BRGVAL);
 
     timeStamp = 0;
     Timer2Init(&Timer2InterruptRoutine, 0xFFFF);
 
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) FATAL_ERROR();
-    
-    file = NewSDInit("newfile.txt");
 
     int SDConnected = 0;
     maxBuffer = 0;
@@ -97,7 +95,7 @@ int main(void)
             // is data, write it.
             unsigned char outData[SD_SECTOR_SIZE];
             if (CB_PeekMany(&circBuf, outData, SD_SECTOR_SIZE)){
-                if(NewSDWriteSector(file, outData)){
+                if(NewSDWriteSector(outData)){
                     // Remove the data we just written.
                     CB_Remove(&circBuf, SD_SECTOR_SIZE);
                 } else failedWrites++;
