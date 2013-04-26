@@ -40,6 +40,7 @@ unsigned char cbData[CB_SIZE];
 uint32_t timeStamp;
 uint32_t maxBuffer;
 uint32_t latestMaxBuffer;
+uint32_t failedWrites;
 
 /*
  * 
@@ -71,7 +72,7 @@ int main(void)
     Uart1Init(BRGVAL);
 
     timeStamp = 0;
-    Timer2Init(&Timer2InterruptRoutine, (uint16_t)T2_PRESCALE);
+    Timer2Init(&Timer2InterruptRoutine, 0xFFFF);
 
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) FATAL_ERROR();
     
@@ -99,7 +100,7 @@ int main(void)
                 if(NewSDWriteSector(file, outData)){
                     // Remove the data we just written.
                     CB_Remove(&circBuf, SD_SECTOR_SIZE);
-                }
+                } else failedWrites++;
             }
         } else {
             SDConnected = 0;
@@ -118,12 +119,10 @@ void Timer2InterruptRoutine(void)
 {
     timeStamp += 1;
 
-    Uart1WriteByte(0x11);
-    Uart1WriteByte(0x22);
-    Uart1WriteByte(0x33);
-    Uart1WriteByte(0x44);
+    Uart1WriteByte('!');
     Uart1WriteData(&timeStamp, sizeof(timeStamp));
-    Uart1WriteData(&latestMaxBuffer, sizeof(latestMaxBuffer));
-    Uart1WriteData(&maxBuffer, sizeof(maxBuffer));
+    Uart1WriteByte(latestMaxBuffer >> 9);
+    Uart1WriteByte(maxBuffer >> 9);
+    Uart1WriteData(&failedWrites, sizeof(failedWrites));
     latestMaxBuffer = 0;
 }

@@ -1,0 +1,11 @@
+Format :
+
+marker : '!'
+four bytes - timestamp
+one byte - max buffer size of most recent tick (sector size 512)
+one byte - max buffer size of current test (sector size 512)
+four bytes - number of failed writes in current test
+
+aprox 2 hour test
+max buffer size: 11*512
+failed writes: 0
