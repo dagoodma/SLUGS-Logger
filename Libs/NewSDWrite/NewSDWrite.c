@@ -7,9 +7,12 @@
 #include "Uart2.h"
 #include <stdio.h>
 #include "Node.h"
+#include <string.h>
 
-#define CONFIG_READ_SIZE 11
+#define CONFIG_READ_SIZE 30
 #define FILE_NAME "newfile.txt"
+#define MAX_PREFIX "5"
+#define EIGHT_THREE_LEN 9
 
 // Directory entry structure
 typedef struct
@@ -55,6 +58,7 @@ long int NewSDInit()
     FSFILE *configFile = NULL;
     char configText[CONFIG_READ_SIZE + 1];
     long int baudRate;
+    char fileName[8+1+3+1] = {}; // max size of a 8.3 file (null terminated)
 
     filePointer = NULL;
 
@@ -63,14 +67,15 @@ long int NewSDInit()
 
     // Open then read the config file, null terminate the config text string
     while (configFile == NULL) configFile = FSfopen("CONFIG.TXT", "r"); // open the file
-    if( CONFIG_READ_SIZE != FSfread(configText, 1, CONFIG_READ_SIZE, configFile)) FATAL_ERROR();
+    FSfread(configText, 1, CONFIG_READ_SIZE, configFile);
     configText[CONFIG_READ_SIZE] = '\0';
 
-    // read baud rate
-    sscanf(configText, "BAUD %ld", &baudRate);
+    // extract config info
+    sscanf(configText, "BAUD %ld\nFNAME %" MAX_PREFIX "s", &baudRate, fileName);
+    strncat(fileName, ".txt", EIGHT_THREE_LEN);
 
     // Open a new file
-    while (filePointer == NULL) filePointer = FSfopen(FILE_NAME, "w");
+    while (filePointer == NULL) filePointer = FSfopen(fileName, "w");
 
     // Initialize data for NewSDWriteSector
     filePointer->ccls = filePointer->cluster;;
