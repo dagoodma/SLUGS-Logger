@@ -47,14 +47,14 @@ extern BYTE gNeedDataWrite;
 FSFILE * filePointer;
 
 /**
- * New functionality: Reads the config file, 
+ * New functionality: Opens, reads config file. No
  * @return Buad rate
  */
-int NewSDInit()
+long int NewSDInit()
 {
     FSFILE *configFile = NULL;
     char configText[CONFIG_READ_SIZE + 1];
-    int baudRate;
+    long int baudRate;
 
     filePointer = NULL;
 
@@ -67,7 +67,7 @@ int NewSDInit()
     configText[CONFIG_READ_SIZE] = '\0';
 
     // read baud rate
-    sscanf(configText, "BAUD %d", &baudRate);
+    sscanf(configText, "BAUD %ld", &baudRate);
 
     // Open a new file
     while (filePointer == NULL) filePointer = FSfopen(FILE_NAME, "w");

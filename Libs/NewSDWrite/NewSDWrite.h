@@ -14,7 +14,7 @@
  * @param filename A string with the filename (name.ext)
  * @return A file structure
  */
-int NewSDInit();
+long int NewSDInit();
 
 /**
  * Writes the data in outbuf to the file (pointer)
