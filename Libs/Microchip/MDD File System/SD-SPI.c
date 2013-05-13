@@ -1785,7 +1785,7 @@ BYTE MDD_SDSPI_SectorWrite(DWORD sector_addr, BYTE* buffer, BYTE allowWriteToZer
         }
     }    
     return TRUE;
-}    
+}
 
 
 

@@ -19,12 +19,14 @@ void __attribute__((interrupt, no_auto_psv)) _OscillatorFail(void)
 void __attribute__((interrupt, no_auto_psv)) _AddressError(void)
 {
 	INTCON1bits.ADDRERR = 0;
-	FATAL_ERROR();
+	TRISAbits.TRISA1 = 0;
+    LATAbits.LATA1 = 1;
 }
 void __attribute__((interrupt, no_auto_psv)) _StackError(void)
 {
 	INTCON1bits.STKERR = 0;
-	FATAL_ERROR();
+    TRISAbits.TRISA0 = 0;
+    LATAbits.LATA0 = 1;
 }
 
 void __attribute__((interrupt, no_auto_psv)) _MathError(void)

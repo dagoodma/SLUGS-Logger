@@ -22,7 +22,7 @@ long int NewSDInit();
  * @param outbuf An array of data (BYTES_PER_SECTOR in legnth)
  * @return 1 if successful, 0 otherwise.
  */
-void NewFileUpdate(FSFILE * pointer);
+int NewFileUpdate(FSFILE * pointer);
 
 /**
  * Mimics FSfileClose to write file info to the SD card.

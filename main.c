@@ -3,6 +3,10 @@
  * Author: Jesse
  *
  * Created on February 12, 2013, 11:17 AM
+ *
+ * Known bug: Sometimes taking the SD card out causes a stack and/or address error. As far as we
+ * have tested, these occur simultaniously, but this is not confirmed. It might happend if the card
+ * is taken out while writing to it, but this is also not confirmed.
  */
 #define UART2_BUFFER_SIZE 512
 #define SD_SECTOR_SIZE 512
@@ -31,6 +35,7 @@ _FWDT(FWDTEN_OFF);
 
 void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize);
 void Timer2InterruptRoutine(void);
+void setLeds(char input);
 
 CircularBuffer circBuf;
 unsigned char cbData[CB_SIZE];
@@ -79,6 +84,9 @@ int main(void)
     int SDConnected = 0;
     maxBuffer = 0;
     latestMaxBuffer = 0;
+
+    TRISA = 0;
+    setLeds(1);
     while(1)
     {
         if (SD_IN)
@@ -123,4 +131,9 @@ void Timer2InterruptRoutine(void)
     Uart1WriteByte(maxBuffer >> 9);
     Uart1WriteData(&failedWrites, sizeof(failedWrites));
     latestMaxBuffer = 0;
+}
+
+void setLeds(char input)
+{
+    LATA = input;
 }

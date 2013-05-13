@@ -15,35 +15,35 @@
 #define EIGHT_THREE_LEN 9
 
 // Directory entry structure
-typedef struct
-{
-    char      DIR_Name[DIR_NAMESIZE];           // File name
-    char      DIR_Extension[DIR_EXTENSION];     // File extension
-    BYTE      DIR_Attr;                         // File attributes
-    BYTE      DIR_NTRes;                        // Reserved byte
-    BYTE      DIR_CrtTimeTenth;                 // Create time (millisecond field)
-    WORD      DIR_CrtTime;                      // Create time (second, minute, hour field)
-    WORD      DIR_CrtDate;                      // Create date
-    WORD      DIR_LstAccDate;                   // Last access date
-    WORD      DIR_FstClusHI;                    // High word of the entry's first cluster number
-    WORD      DIR_WrtTime;                      // Last update time
-    WORD      DIR_WrtDate;                      // Last update date
-    WORD      DIR_FstClusLO;                    // Low word of the entry's first cluster number
-    DWORD     DIR_FileSize;                     // The 32-bit file size
-}_DIRENTRY;
 
-typedef _DIRENTRY * DIRENTRY;                   // A pointer to a directory entry structure
-typedef FSFILE   * FILEOBJ;
+typedef struct {
+    char DIR_Name[DIR_NAMESIZE]; // File name
+    char DIR_Extension[DIR_EXTENSION]; // File extension
+    BYTE DIR_Attr; // File attributes
+    BYTE DIR_NTRes; // Reserved byte
+    BYTE DIR_CrtTimeTenth; // Create time (millisecond field)
+    WORD DIR_CrtTime; // Create time (second, minute, hour field)
+    WORD DIR_CrtDate; // Create date
+    WORD DIR_LstAccDate; // Last access date
+    WORD DIR_FstClusHI; // High word of the entry's first cluster number
+    WORD DIR_WrtTime; // Last update time
+    WORD DIR_WrtDate; // Last update date
+    WORD DIR_FstClusLO; // Low word of the entry's first cluster number
+    DWORD DIR_FileSize; // The 32-bit file size
+} _DIRENTRY;
+
+typedef _DIRENTRY * DIRENTRY; // A pointer to a directory entry structure
+typedef FSFILE * FILEOBJ;
 int allocate_multiple_clusters(FSFILE*, DWORD);
 BYTE FILEallocate_new_cluster(FSFILE *fo, BYTE mode);
 DWORD FILEget_true_sector(FSFILE *);
-DWORD ReadFAT (DISK *, DWORD);
+DWORD ReadFAT(DISK *, DWORD);
 DWORD Cluster2Sector(DISK *, DWORD);
 DIRENTRY LoadDirAttrib(FILEOBJ fo, WORD *fHandle);
-DWORD WriteFAT (DISK *dsk, DWORD ccls, DWORD value, BYTE forceWrite);
+DWORD WriteFAT(DISK *dsk, DWORD ccls, DWORD value, BYTE forceWrite);
 void IncrementTimeStamp(DIRENTRY dir);
-BYTE Write_File_Entry( FILEOBJ fo, WORD * curEntry);
-BYTE flushData (void);
+BYTE Write_File_Entry(FILEOBJ fo, WORD * curEntry);
+BYTE flushData(void);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 
@@ -58,7 +58,7 @@ long int NewSDInit()
     FSFILE *configFile = NULL;
     char configText[CONFIG_READ_SIZE + 1];
     long int baudRate;
-    char fileName[8+1+3+1] = {}; // max size of a 8.3 file (null terminated)
+    char fileName[8 + 1 + 3 + 1] = {}; // max size of a 8.3 file (null terminated)
 
     filePointer = NULL;
 
@@ -78,7 +78,8 @@ long int NewSDInit()
     while (filePointer == NULL) filePointer = FSfopen(fileName, FS_WRITE);
 
     // Initialize data for NewSDWriteSector
-    filePointer->ccls = filePointer->cluster;;
+    filePointer->ccls = filePointer->cluster;
+    ;
 
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;
@@ -95,9 +96,9 @@ long int NewSDInit()
 int NewSDWriteSector(unsigned char outbuf[BYTES_PER_SECTOR])
 {
     DWORD CurrentSector = Cluster2Sector(filePointer->dsk, filePointer->ccls)
-            + filePointer->sec;
+        + filePointer->sec;
     DWORD SectorLimit = Cluster2Sector(filePointer->dsk, filePointer->ccls)
-            + filePointer->dsk->SecPerClus;
+        + filePointer->dsk->SecPerClus;
 
     // Write the data
     int success = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, 0);
@@ -109,9 +110,9 @@ int NewSDWriteSector(unsigned char outbuf[BYTES_PER_SECTOR])
     // else, next sector
     if (CurrentSector == SectorLimit - 1) {
         // Set cluster and sector to next cluster in our chain
-        if(FILEallocate_new_cluster(filePointer, 0)!=CE_GOOD){ // allocate a new cluster
+        if (FILEallocate_new_cluster(filePointer, 0) != CE_GOOD) { // allocate a new cluster
             // !! Also sets ccls to the new cluster
-            while(1);
+            while (1);
         }
         filePointer->sec = 0;
     } else {
@@ -122,7 +123,7 @@ int NewSDWriteSector(unsigned char outbuf[BYTES_PER_SECTOR])
     gNeedDataWrite = FALSE;
 
     // save off the positon
-    filePointer->pos = BYTES_PER_SECTOR-1; // current position in sector (bytes)
+    filePointer->pos = BYTES_PER_SECTOR - 1; // current position in sector (bytes)
 
     // save off the seek
     filePointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
@@ -130,35 +131,42 @@ int NewSDWriteSector(unsigned char outbuf[BYTES_PER_SECTOR])
     // now the new size
     //  #Problem: This might not be accurate
     filePointer->size += BYTES_PER_SECTOR; // size of file (bytes)
-    NewFileUpdate(filePointer);
-    
-    return 1;
+    if (NewFileUpdate(filePointer)) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 /**
  * Mimics FSfileClose to write file info to the SD card.
  * @param fo The file to update
+ * @return 1 if success, 0 for failed update
  */
-void NewFileUpdate(FSFILE * fo)
+int NewFileUpdate(FSFILE * fo)
 {
+    if (fo == NULL) {
+        return 0;
+    }
     DIRENTRY dir;
     WORD fHandle = fo->entry;
 
     // Write the file data
-//    if(flushData()) while(1);
-    WriteFAT (fo->dsk, 0, 0, TRUE);
+    WriteFAT(fo->dsk, 0, 0, TRUE);
     
-
-    // Isn't correct anyways
-    //IncrementTimeStamp(dir);
-
     // Update file entry data
     dir = LoadDirAttrib(fo, &fHandle);
+    if (dir == NULL) {
+        return 0;
+    }
     dir->DIR_FileSize = fo->size;
     dir->DIR_Attr = fo->attributes;
-    dir->DIR_FstClusHI= (fo->cluster&0xFFFF0000)>>16;
-    dir->DIR_FstClusLO= fo->cluster&0x0000FFFF;
-    Write_File_Entry(fo,&fHandle);
+    dir->DIR_FstClusHI = (fo->cluster & 0xFFFF0000) >> 16;
+    dir->DIR_FstClusLO = fo->cluster & 0x0000FFFF;
+    
+    Write_File_Entry(fo, &fHandle);
+    
+    return 1;
 }
 
 /**
