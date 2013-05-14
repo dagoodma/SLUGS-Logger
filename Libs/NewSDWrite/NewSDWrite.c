@@ -9,9 +9,10 @@
 #include "Node.h"
 #include <string.h>
 
-#define CONFIG_READ_SIZE 30
+#define CONFIG_READ_SIZE 50
 #define FILE_NAME "newfile.txt"
 #define MAX_PREFIX "5"
+#define MAX_SUFFIX "3"
 #define EIGHT_THREE_LEN 9
 
 // Directory entry structure
@@ -58,7 +59,9 @@ long int NewSDInit()
     FSFILE *configFile = NULL;
     char configText[CONFIG_READ_SIZE + 1];
     long int baudRate;
+    int fileSuffix;
     char fileName[8 + 1 + 3 + 1] = {}; // max size of a 8.3 file (null terminated)
+    char suffixText[4];
 
     filePointer = NULL;
 
@@ -66,20 +69,36 @@ long int NewSDInit()
     while (!FSInit());
 
     // Open then read the config file, null terminate the config text string
-    while (configFile == NULL) configFile = FSfopen("CONFIG.TXT", FS_READ); // open the file
+    while (configFile == NULL) configFile = FSfopen("CONFIG.TXT", FS_READPLUS); // open the file
     FSfread(configText, 1, CONFIG_READ_SIZE, configFile);
+    FSrewind(configFile);
     configText[CONFIG_READ_SIZE] = '\0';
 
     // extract config info
-    sscanf(configText, "BAUD %ld\nFNAME %" MAX_PREFIX "s", &baudRate, fileName);
+    sscanf(configText, "BAUD %ld"
+        "\nFNAME %" MAX_PREFIX "s"
+        "\nFSUFF %" MAX_SUFFIX "d", &baudRate, fileName, &fileSuffix);
+
+    // create the filename (add suffix, extention)
+    sprintf(suffixText, "%03d", fileSuffix);
+    strncat(fileName, suffixText, 4);
     strncat(fileName, ".txt", EIGHT_THREE_LEN);
+
+    // Increment suffix in config file
+    fileSuffix += 1;
+    char * suffixStr = strstr(configText, "FSUFF");
+    suffixStr += 6;
+    sprintf(suffixText, "%03d", fileSuffix);
+    strncpy(suffixStr, suffixText, 4);
+
+    FSfwrite(configText, 1, strlen(configText)+1, configFile);
+    FSfclose(configFile);
 
     // Open a new file
     while (filePointer == NULL) filePointer = FSfopen(fileName, FS_WRITE);
 
     // Initialize data for NewSDWriteSector
     filePointer->ccls = filePointer->cluster;
-    ;
 
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;
