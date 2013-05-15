@@ -61,7 +61,10 @@ long int NewSDInit()
     long int baudRate;
     int fileSuffix;
     char fileName[8 + 1 + 3 + 1] = {}; // max size of a 8.3 file (null terminated)
+    char fileBase[8 + 1 + 3 + 1] = {};
+    char fileFormat[8 + 1 + 3 + 1] = {};
     char suffixText[4];
+    SearchRec searchRec;
 
     filePointer = NULL;
 
@@ -76,23 +79,31 @@ long int NewSDInit()
 
     // extract config info
     sscanf(configText, "BAUD %ld"
-        "\nFNAME %" MAX_PREFIX "s"
-        "\nFSUFF %" MAX_SUFFIX "d", &baudRate, fileName, &fileSuffix);
+        "\nFNAME %" MAX_PREFIX "s", &baudRate, fileBase);
 
-    // create the filename (add suffix, extention)
-    sprintf(suffixText, "%03d", fileSuffix);
-    strncat(fileName, suffixText, 4);
-    strncat(fileName, ".txt", EIGHT_THREE_LEN);
-
-    // Increment suffix in config file
-    fileSuffix += 1;
-    char * suffixStr = strstr(configText, "FSUFF");
-    suffixStr += 6;
-    sprintf(suffixText, "%03d", fileSuffix);
-    strncpy(suffixStr, suffixText, 4);
-
-    FSfwrite(configText, 1, strlen(configText)+1, configFile);
-    FSfclose(configFile);
+    // THIS IS ALL MESSED UP - LOOK AT THE WHITE BOARD
+    // find the file with greatest number
+    int newSuff = 0;
+    int checkSuff = 0;
+    strcat(fileBase, "???.txt");
+    if (FindFirst(fileBase, ATTR_MASK, searchRec)) {
+        // there were no files with this name
+    } else {
+        // create the file format
+        strcat(fileFormat, fileBase);
+        strcat(fileFormat, "%d");
+        while (!FindNext(searchRec)) {
+            sscanf(searchRec.filename, fileFormat, &checkSuff);
+            if (checkSuff > newSuff) {
+                newSuff = checkSuff;
+            }
+        }
+        // use
+        strcat(fileName, fileBase);
+        sprintf(suffixText, "%03d", newSuff);
+        strcat(fileName, suffixText);
+        strcat(fileName, ".txt");
+    }
 
     // Open a new file
     while (filePointer == NULL) filePointer = FSfopen(fileName, FS_WRITE);
