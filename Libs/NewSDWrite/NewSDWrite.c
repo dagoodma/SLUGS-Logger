@@ -10,7 +10,6 @@
 #include <string.h>
 
 #define CONFIG_READ_SIZE 50
-#define FILE_NAME "newfile.txt"
 #define MAX_PREFIX "5"
 #define MAX_SUFFIX "3"
 #define EIGHT_THREE_LEN 8 + 1 + 3 + 1
@@ -35,16 +34,11 @@ typedef struct {
 
 typedef _DIRENTRY * DIRENTRY; // A pointer to a directory entry structure
 typedef FSFILE * FILEOBJ;
-int allocate_multiple_clusters(FSFILE*, DWORD);
 BYTE FILEallocate_new_cluster(FSFILE *fo, BYTE mode);
-DWORD FILEget_true_sector(FSFILE *);
-DWORD ReadFAT(DISK *, DWORD);
 DWORD Cluster2Sector(DISK *, DWORD);
 DIRENTRY LoadDirAttrib(FILEOBJ fo, WORD *fHandle);
 DWORD WriteFAT(DISK *dsk, DWORD ccls, DWORD value, BYTE forceWrite);
-void IncrementTimeStamp(DIRENTRY dir);
 BYTE Write_File_Entry(FILEOBJ fo, WORD * curEntry);
-BYTE flushData(void);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 int utf16toStr(unsigned short int * origin, char * result, int number);
@@ -52,19 +46,30 @@ int utf16toStr(unsigned short int * origin, char * result, int number);
 FSFILE * filePointer;
 
 /**
- * New functionality: Opens, reads config file. No
- * @return Buad rate
+ * Opens the config file, extracts info, searches for a new filename to use, opens the file for
+ * writing
+ * @return Buad rate extracted from the config file
  */
 long int NewSDInit()
 {
+    // used for accessing config file
     FSFILE *configFile = NULL;
     char configText[CONFIG_READ_SIZE + 1];
-    long int baudRate;
-    char fileName[EIGHT_THREE_LEN] = {}; // max size of a 8.3 file (null terminated)
-    char fileBase[EIGHT_THREE_LEN] = {};
-    SearchRec searchRec;
 
-    filePointer = NULL;
+    // extracted from the config
+    long int baudRate;
+    char fileBase[EIGHT_THREE_LEN] = {};
+
+    // used in the file search
+    char searchFormat[EIGHT_THREE_LEN];
+    char extractFormat[EIGHT_THREE_LEN];
+    SearchRec searchRec;
+    int checkSuff = 0; // Suff = Suffix
+    int maxSuff = 0;
+    char copyInto[EIGHT_THREE_LEN];
+
+    // the final file name
+    char fileName[EIGHT_THREE_LEN] = {};
 
     while (!MDD_MediaDetect()); // TODO make this smarter
     while (!FSInit());
@@ -76,19 +81,17 @@ long int NewSDInit()
     configText[CONFIG_READ_SIZE] = '\0';
 
     // extract config info
-    sscanf(configText, "BAUD %ld"
-        "\nFNAME %" MAX_PREFIX "s", &baudRate, fileBase);
+    if (sscanf(configText, "BAUD %ld"
+        "\nFNAME %" MAX_PREFIX "s", &baudRate, fileBase) < 2) {
+        FATAL_ERROR();
+    }
 
-    char searchFormat[EIGHT_THREE_LEN];
-    char extractFormat[EIGHT_THREE_LEN];
-    int checkSuff = 0;
-    int maxSuff = 0;
-    char copyInto[EIGHT_THREE_LEN];
-
+    // create format strings used in the search
     sprintf(searchFormat, "%s???.txt", fileBase);
     sprintf(extractFormat, "%s%s", fileBase, "%3d");
 
-    // search w/ searchFormat
+    // use FindFirst and FindNext to search through all files starting with the desired name. Find
+    // the largest suffix of those files.
     if (FindFirst(searchFormat, ATTR_MASK, &searchRec)) {
         // no file of that format was found - start at 000
         maxSuff = 0;
@@ -96,7 +99,9 @@ long int NewSDInit()
         do {
             // check the filename
             if (searchRec.utf16LFNfoundLength) {
-                utf16toStr(searchRec.utf16LFNfound, copyInto, EIGHT_THREE_LEN);
+                if(!utf16toStr(searchRec.utf16LFNfound, copyInto, EIGHT_THREE_LEN)) {
+                    FATAL_ERROR();
+                }
                 sscanf(copyInto, extractFormat, &checkSuff);
             } else {
                 sscanf(searchRec.filename, extractFormat, &checkSuff);
@@ -108,10 +113,12 @@ long int NewSDInit()
         maxSuff += 1; // important - increment the file suffix
     }
     if (maxSuff >= 1000) FATAL_ERROR();
-    
+
+    // create the final file name to use
     sprintf(fileName, "%s%03d.txt", fileBase, maxSuff);
 
     // Open a new file
+    filePointer = NULL;
     while (filePointer == NULL) filePointer = FSfopen(fileName, FS_WRITE);
 
     // Initialize data for NewSDWriteSector
@@ -206,31 +213,12 @@ int NewFileUpdate(FSFILE * fo)
 }
 
 /**
- * Allocate more clusters for a file.
- * !! This won't work. FILEallocate_new_cluster changes fo->ccls. One would need
- * to keep track of the real current cluster some other way.
- * @param fo File Object of the file you want to extend.
- * @param num_clusters The number of clusters to allocate.
- * @return Returns the number of successful allocations.
- */
-int allocate_multiple_clusters(FSFILE* fo, DWORD num_clusters)
-{
-    int i;
-    for (i = 0; i < num_clusters; i++) {
-        if (FILEallocate_new_cluster(fo, 0) != CE_GOOD) {
-            return i;
-        }
-    }
-    return num_clusters;
-}
-
-/**
  * Copies UTF-16 string to an ASCII string. Assumes all characters in the origin string can be
  * represnted in ASCII.
  * @param origin The string to copy
  * @param result Where to put it
  * @param number Max number of characters to copy
- * @return 0 if either
+ * @return 0 if either of the arguments are NULL, or the string to copy is too large
  */
 int utf16toStr(unsigned short int * origin, char * result, int number)
 {
