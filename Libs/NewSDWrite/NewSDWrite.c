@@ -13,7 +13,7 @@
 #define FILE_NAME "newfile.txt"
 #define MAX_PREFIX "5"
 #define MAX_SUFFIX "3"
-#define EIGHT_THREE_LEN 9
+#define EIGHT_THREE_LEN 8 + 1 + 3 + 1
 
 // Directory entry structure
 
@@ -47,6 +47,7 @@ BYTE Write_File_Entry(FILEOBJ fo, WORD * curEntry);
 BYTE flushData(void);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
+int utf16toStr(unsigned short int * origin, char * result, int number);
 
 FSFILE * filePointer;
 
@@ -59,11 +60,8 @@ long int NewSDInit()
     FSFILE *configFile = NULL;
     char configText[CONFIG_READ_SIZE + 1];
     long int baudRate;
-    int fileSuffix;
-    char fileName[8 + 1 + 3 + 1] = {}; // max size of a 8.3 file (null terminated)
-    char fileBase[8 + 1 + 3 + 1] = {};
-    char fileFormat[8 + 1 + 3 + 1] = {};
-    char suffixText[4];
+    char fileName[EIGHT_THREE_LEN] = {}; // max size of a 8.3 file (null terminated)
+    char fileBase[EIGHT_THREE_LEN] = {};
     SearchRec searchRec;
 
     filePointer = NULL;
@@ -81,29 +79,36 @@ long int NewSDInit()
     sscanf(configText, "BAUD %ld"
         "\nFNAME %" MAX_PREFIX "s", &baudRate, fileBase);
 
-    // THIS IS ALL MESSED UP - LOOK AT THE WHITE BOARD
-    // find the file with greatest number
-    int newSuff = 0;
+    char searchFormat[EIGHT_THREE_LEN];
+    char extractFormat[EIGHT_THREE_LEN];
     int checkSuff = 0;
-    strcat(fileBase, "???.txt");
-    if (FindFirst(fileBase, ATTR_MASK, searchRec)) {
-        // there were no files with this name
+    int maxSuff = 0;
+    char copyInto[EIGHT_THREE_LEN];
+
+    sprintf(searchFormat, "%s???.txt", fileBase);
+    sprintf(extractFormat, "%s%s", fileBase, "%3d");
+
+    // search w/ searchFormat
+    if (FindFirst(searchFormat, ATTR_MASK, &searchRec)) {
+        // no file of that format was found - start at 000
+        maxSuff = 0;
     } else {
-        // create the file format
-        strcat(fileFormat, fileBase);
-        strcat(fileFormat, "%d");
-        while (!FindNext(searchRec)) {
-            sscanf(searchRec.filename, fileFormat, &checkSuff);
-            if (checkSuff > newSuff) {
-                newSuff = checkSuff;
+        do {
+            // check the filename
+            if (searchRec.utf16LFNfoundLength) {
+                utf16toStr(searchRec.utf16LFNfound, copyInto, EIGHT_THREE_LEN);
+                sscanf(copyInto, extractFormat, &checkSuff);
+            } else {
+                sscanf(searchRec.filename, extractFormat, &checkSuff);
             }
-        }
-        // use
-        strcat(fileName, fileBase);
-        sprintf(suffixText, "%03d", newSuff);
-        strcat(fileName, suffixText);
-        strcat(fileName, ".txt");
+            if (checkSuff > maxSuff) {
+                maxSuff = checkSuff;
+            }
+        } while (!FindNext(&searchRec));
+        maxSuff += 1; // important - increment the file suffix
     }
+    
+    sprintf(fileName, "%s%03d.txt", fileBase, maxSuff);
 
     // Open a new file
     while (filePointer == NULL) filePointer = FSfopen(fileName, FS_WRITE);
@@ -216,4 +221,24 @@ int allocate_multiple_clusters(FSFILE* fo, DWORD num_clusters)
         }
     }
     return num_clusters;
+}
+
+/**
+ * Copies UTF-16 string to an ASCII string. Assumes all characters in the origin string can be
+ * represnted in ASCII.
+ * @param origin The string to copy
+ * @param result Where to put it
+ * @param number Max number of characters to copy
+ * @return 0 if either
+ */
+int utf16toStr(unsigned short int * origin, char * result, int number)
+{
+    if (origin == NULL || result == NULL) return 0;
+    int index;
+    for (index = 0; origin[index] != 0; index++) {
+        result[index] = (char) origin[index];
+        if (index == number - 1) return 0;
+    }
+    result[index] = (char) origin[index];
+    return 1;
 }
