@@ -19,6 +19,6 @@
  * This macro provides a way to handle fatal errors on the CAN node, where a red error LED is
  * available. This macro turns that LED on then sits and spins in a forever-loop.
  */
-#define FATAL_ERROR() while(1)
+#define FATAL_ERROR() do {TRISAbits.TRISA3 = 0; LATAbits.LATA3 = 1; while(1); } while(0)
 
 #endif // CAN_NODE_H

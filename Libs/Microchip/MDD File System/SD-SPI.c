@@ -427,7 +427,7 @@ DWORD MDD_SDSPI_ReadCapacity(void)
     The MDD_SDSPI_InitIO function initializes the I/O
     pins connected to the SD card.
   Remarks:
-    None
+    NoneFSInit
   *********************************************************/
 
 void MDD_SDSPI_InitIO (void)

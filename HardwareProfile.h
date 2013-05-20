@@ -538,14 +538,14 @@
         #define SD_CS_TRIS          TRISBbits.TRISB0
 
         // Description: SD-SPI Card Detect Input bit
-        #define SD_CD               PORTBbits.RB8
+        #define SD_CD               PORTAbits.RA0
         // Description: SD-SPI Card Detect TRIS bit
-        #define SD_CD_TRIS          TRISBbits.TRISB8
+        #define SD_CD_TRIS          TRISAbits.TRISA0
 
         // Description: SD-SPI Write Protect Check Input bit
         #define SD_WE               0
         // Description: SD-SPI Write Protect Check TRIS bit
-        #define SD_WE_TRIS          TRISBbits.TRISB8
+        #define SD_WE_TRIS          TRISAbits.TRISA2
 
         // Registers for the SPI module you want to use
 

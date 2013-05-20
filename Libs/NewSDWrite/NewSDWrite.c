@@ -112,7 +112,9 @@ long int NewSDInit()
         } while (!FindNext(&searchRec));
         maxSuff += 1; // important - increment the file suffix
     }
-    if (maxSuff >= 1000) FATAL_ERROR();
+    if (maxSuff >= 1000) {
+        FATAL_ERROR();
+    }
 
     // create the final file name to use
     sprintf(fileName, "%s%03d.txt", fileBase, maxSuff);

@@ -74,26 +74,27 @@ int main(void)
     
     initPins();
 
+    Uart2Init(NewSDInit(), Uart2InterruptRoutine);
     Uart1Init(BRGVAL);
 
     timeStamp = 0;
     Timer2Init(&Timer2InterruptRoutine, 0xFFFF);
 
-    if (!CB_Init(&circBuf, cbData, CB_SIZE)) FATAL_ERROR();
+    if (!CB_Init(&circBuf, cbData, CB_SIZE)) {
+        FATAL_ERROR();
+    }
 
     int SDConnected = 0;
     maxBuffer = 0;
     latestMaxBuffer = 0;
-
-    TRISA = 0;
-    setLeds(1);
+    
     while(1)
     {
         if (SD_IN)
         {
             // if the board was just plugged in try to reinitialize
             if(!SDConnected) {
-                MEDIA_INFORMATION * Minfo;
+               MEDIA_INFORMATION * Minfo;
                 do {
                     Minfo = MDD_MediaInitialize();
                 } while(Minfo->errorCode == MEDIA_CANNOT_INITIALIZE);
@@ -133,18 +134,16 @@ void Timer2InterruptRoutine(void)
     latestMaxBuffer = 0;
 }
 
-void setLeds(char input)
-{
-    LATA = input;
-}
-
+/**
+ * Initialize pin mappings and set pins as digital.
+ */
 void initPins(void)
 {
     PPSUnLock;
     
     // To enable UART1 pins: TX on 11, RX on 13
-	PPSOutput(OUT_FN_PPS_U1TX, OUT_PIN_PPS_RP11);
-	PPSInput(PPS_U1RX, PPS_RP13);
+	PPSOutput(OUT_FN_PPS_U2TX, OUT_PIN_PPS_RP11);
+	PPSInput(PPS_U2RX, PPS_RP13);
 
 	// Configure SPI1 so that:
 	//  * (input) SPI1.SDI = B8
@@ -155,4 +154,11 @@ void initPins(void)
 	PPSOutput(OUT_FN_PPS_SDO1, OUT_PIN_PPS_RP10);
 	
 	PPSLock;
+
+    AD1PCFGLbits.PCFG0 = 1;
+    AD1PCFGLbits.PCFG1 = 1;
+    AD1PCFGLbits.PCFG2 = 1;
+    AD1PCFGLbits.PCFG3 = 1;
+    AD1PCFGLbits.PCFG4 = 1;
+    AD1PCFGLbits.PCFG5 = 1;
 }
