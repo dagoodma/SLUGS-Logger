@@ -533,19 +533,19 @@
 #elif defined __dsPIC33F__
 
         // Description: SD-SPI Chip Select Output bit
-        #define SD_CS               PORTBbits.RB1
+        #define SD_CS               PORTBbits.RB0
         // Description: SD-SPI Chip Select TRIS bit
-        #define SD_CS_TRIS          TRISBbits.TRISB1
+        #define SD_CS_TRIS          TRISBbits.TRISB0
 
         // Description: SD-SPI Card Detect Input bit
-        #define SD_CD               PORTFbits.RF0
+        #define SD_CD               PORTBbits.RB8
         // Description: SD-SPI Card Detect TRIS bit
-        #define SD_CD_TRIS          TRISFbits.TRISF0
+        #define SD_CD_TRIS          TRISBbits.TRISB8
 
         // Description: SD-SPI Write Protect Check Input bit
-        #define SD_WE               PORTFbits.RF1
+        #define SD_WE               0
         // Description: SD-SPI Write Protect Check TRIS bit
-        #define SD_WE_TRIS          TRISFbits.TRISF1
+        #define SD_WE_TRIS          TRISBbits.TRISB8
 
         // Registers for the SPI module you want to use
 
@@ -567,11 +567,11 @@
         // Tris pins for SCK/SDI/SDO lines
 
         // Description: The TRIS bit for the SCK pin
-        #define SPICLOCK            TRISFbits.TRISF6
+        #define SPICLOCK            TRISBbits.TRISB15
         // Description: The TRIS bit for the SDI pin
-        #define SPIIN               TRISFbits.TRISF7
+        #define SPIIN               TRISBbits.TRISB1
         // Description: The TRIS bit for the SDO pin
-        #define SPIOUT              TRISFbits.TRISF8
+        #define SPIOUT              TRISBbits.TRISB10
     #elif defined (__PIC32MX__)
         // Registers for the SPI module you want to use
         #define MDD_USE_SPI_1

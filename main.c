@@ -10,7 +10,7 @@
  */
 #define UART2_BUFFER_SIZE 512
 #define SD_SECTOR_SIZE 512
-#define CB_SIZE 512*35
+#define CB_SIZE 512*10
 #define SD_IN !SD_CD
 
 #define FCY 40000000
@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include "CircularBuffer.h"
 #include <xc.h>
+#include <pps.h>
 // The Uartx.h files need to be included before stddef.h
 #include "Uart2.h"
 #include "Uart1.h"
@@ -29,13 +30,19 @@
 #include "Node.h"
 #include "Timer2.h"
 
-_FOSCSEL(FNOSC_FRC);
+// Use internal RC to start; we then switch to PLL'd iRC.
+_FOSCSEL(FNOSC_FRC & IESO_OFF);
+// Clock Pragmas
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
+// Disable watchdog timer
 _FWDT(FWDTEN_OFF);
+// Disable JTAG and specify port 3 for ICD pins.
+_FICD(JTAGEN_OFF & ICS_PGD3);
 
 void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize);
 void Timer2InterruptRoutine(void);
 void setLeds(char input);
+void initPins(void);
 
 CircularBuffer circBuf;
 unsigned char cbData[CB_SIZE];
@@ -52,28 +59,21 @@ uint32_t failedWrites;
  */
 int main(void)
 {
-    // Watchdog Timer Enabled/disabled by user software
-    // (LPRC can be disabled by clearing SWDTEN bit in RCON registe
+    // Switch the clock over to 80MHz.
+    PLLFBD = 63;            // M = 65
+    CLKDIVbits.PLLPOST = 0; // N1 = 2
+    CLKDIVbits.PLLPRE = 1;  // N2 = 3
 
-    // Configure Oscillator to operate the device at 40Mhz
-    // Fosc= Fin*M/(N1*N2), Fcy=Fosc/2
-    // Fosc= 8M*40/(2*2)=80Mhz for 8M input clock
-    PLLFBD = 38; // M=40
-    CLKDIVbits.PLLPOST = 0; // N1=2
-    CLKDIVbits.PLLPRE = 0; // N2=2
-    OSCTUN = 0; // Tune FRC oscillator, if FRC is used
+    __builtin_write_OSCCONH(0x01); // Initiate Clock Switch to
 
-    RCONbits.SWDTEN = 0; /* Disable Watch Dog Timer*/
+    __builtin_write_OSCCONL(OSCCON | 0x01); // Start clock switching
 
-    // Clock switch to incorporate PLL
-    __builtin_write_OSCCONH(0x03); // Initiate Clock Switch to Primary
-    // Oscillator with PLL (NOSC=0b011)
-    __builtin_write_OSCCONL(0x01); // Start clock switching
-    while (OSCCONbits.COSC != 0b011); // Wait for Clock switch to occur
+    while (OSCCONbits.COSC != 1); // Wait for Clock switch to occur
 
-    while (OSCCONbits.LOCK != 1) {}; /* Wait for PLL to lock*/
+    while (OSCCONbits.LOCK != 1);
+    
+    initPins();
 
-    Uart2Init(NewSDInit(), Uart2InterruptRoutine);
     Uart1Init(BRGVAL);
 
     timeStamp = 0;
@@ -136,4 +136,23 @@ void Timer2InterruptRoutine(void)
 void setLeds(char input)
 {
     LATA = input;
+}
+
+void initPins(void)
+{
+    PPSUnLock;
+    
+    // To enable UART1 pins: TX on 11, RX on 13
+	PPSOutput(OUT_FN_PPS_U1TX, OUT_PIN_PPS_RP11);
+	PPSInput(PPS_U1RX, PPS_RP13);
+
+	// Configure SPI1 so that:
+	//  * (input) SPI1.SDI = B8
+	PPSInput(PPS_SDI1, PPS_RP1);
+	//  * SPI1.SCK is output on B9
+	PPSOutput(OUT_FN_PPS_SCK1, OUT_PIN_PPS_RP15);
+	//  * (output) SPI1.SDO = B10
+	PPSOutput(OUT_FN_PPS_SDO1, OUT_PIN_PPS_RP10);
+	
+	PPSLock;
 }
