@@ -83,7 +83,7 @@ long int NewSDInit()
     // extract config info
     if (sscanf(configText, "BAUD %ld"
         "\nFNAME %" MAX_PREFIX "s", &baudRate, fileBase) < 2) {
-        FATAL_ERROR();
+        FATAL_ERROR(); // TODO have default config file? maybe not
     }
 
     // create format strings used in the search
