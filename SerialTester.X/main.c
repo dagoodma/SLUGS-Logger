@@ -11,56 +11,47 @@
 #include <xc.h>
 #include "Uart2.h"
 #include "book.h"
+#include <pps.h>
 
 
-_FOSCSEL(FNOSC_FRC);
+// Use internal RC to start; we then switch to PLL'd iRC.
+_FOSCSEL(FNOSC_FRC & IESO_OFF);
+// Clock Pragmas
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
+// Disable watchdog timer
 _FWDT(FWDTEN_OFF);
+// Disable JTAG and specify port 3 for ICD pins.
+_FICD(JTAGEN_OFF & ICS_PGD3);
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize);
 char checksum(char * data, int dataSize);
+void initPins(void);
 
 /*
  * 
  */
 void main() {
-    // Watchdog Timer Enabled/disabled by user software
-    // (LPRC can be disabled by clearing SWDTEN bit in RCON registe
+     // Switch the clock over to 80MHz.
+    PLLFBD = 63;            // M = 65
+    CLKDIVbits.PLLPOST = 0; // N1 = 2
+    CLKDIVbits.PLLPRE = 1;  // N2 = 3
 
-    // Configure Oscillator to operate the device at 40Mhz
-    // Fosc= Fin*M/(N1*N2), Fcy=Fosc/2
-    // Fosc= 8M*40/(2*2)=80Mhz for 8M input clock
-    PLLFBD = 38; // M=40
-    CLKDIVbits.PLLPOST = 0; // N1=2
-    CLKDIVbits.PLLPRE = 0; // N2=2
-    OSCTUN = 0; // Tune FRC oscillator, if FRC is used
+    __builtin_write_OSCCONH(0x01); // Initiate Clock Switch to
 
-    RCONbits.SWDTEN = 0; /* Disable Watch Dog Timer*/
+    __builtin_write_OSCCONL(OSCCON | 0x01); // Start clock switching
 
-    // Clock switch to incorporate PLL
-    __builtin_write_OSCCONH(0x03); // Initiate Clock Switch to Primary
-    // Oscillator with PLL (NOSC=0b011)
-    __builtin_write_OSCCONL(0x01); // Start clock switching
-    while (OSCCONbits.COSC != 0b011); // Wait for Clock switch to occur
+    while (OSCCONbits.COSC != 1); // Wait for Clock switch to occur
 
-    while (OSCCONbits.LOCK != 1) {
-    }; /* Wait for PLL to lock*/
+    while (OSCCONbits.LOCK != 1);
 
-    // configure the button as input
-    TRISDbits.TRISD6 = 1;
+    initPins();
+    
+    Uart2Init((long)115200, InterruptRoutine);
 
-    char toSend[512];
+    Uart2PrintChar('!');
     int i;
-    for (i = 0; i < 512; i++) {
-        toSend[i] = (char) i;
-    }
-
-    Uart2Init(InterruptRoutine);
-
-    while (PORTDbits.RD6);
-
     uint32_t j = 0;
-    for (i = 0; i < 720; i++) {
+    for (i = 0; i < 1; i++) {
         j = 0;
         while (book[j] != '\0') {
             Uart2PrintChar(book[j++]);
@@ -83,4 +74,38 @@ char checksum(char * data, int dataSize) {
         sum ^= data[i];
     }
     return sum;
+}
+
+/**
+ * Initialize pin mappings and set pins as digital.
+ */
+void initPins(void)
+{
+    PPSUnLock;
+
+    // To enable UART1 pins: TX on 11, RX on 13
+	PPSOutput(OUT_FN_PPS_U2TX, OUT_PIN_PPS_RP11);
+	PPSInput(PPS_U2RX, PPS_RP13);
+
+	// Configure SPI1 so that:
+	//  * (input) SPI1.SDI = B10
+	PPSInput(PPS_SDI1, PPS_RP10);
+	//  * SPI1.SCK is output on B15
+	PPSOutput(OUT_FN_PPS_SCK1, OUT_PIN_PPS_RP15);
+	//  * (output) SPI1.SDO = B1
+	PPSOutput(OUT_FN_PPS_SDO1, OUT_PIN_PPS_RP1);
+
+	PPSLock;
+
+	// Enable pull-up on open-drain card detect pin.
+	CNPU1bits.CN2PUE = 1;
+
+    // Configure all used pins to not be AD pins and
+    // be digital I/O instead.
+    AD1PCFGLbits.PCFG0 = 1;
+    AD1PCFGLbits.PCFG1 = 1;
+    AD1PCFGLbits.PCFG2 = 1;
+    AD1PCFGLbits.PCFG3 = 1;
+    AD1PCFGLbits.PCFG4 = 1;
+    AD1PCFGLbits.PCFG5 = 1;
 }

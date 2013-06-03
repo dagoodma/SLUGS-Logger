@@ -13,10 +13,6 @@
 #define CB_SIZE 512*10
 #define SD_IN !SD_CD
 
-#define FCY 40000000
-#define INT_P_MIN 1
-#define T2_PRESCALE FCY / INT_P_MIN * 60 - 1
-
 #include <stdint.h>
 #include "CircularBuffer.h"
 #include <xc.h>
@@ -74,6 +70,8 @@ int main(void)
     
     initPins();
 
+    while (!SD_IN);
+
     Uart2Init(NewSDInit(), Uart2InterruptRoutine);
     Uart1Init(BRGVAL);
 
@@ -83,11 +81,12 @@ int main(void)
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) {
         FATAL_ERROR();
     }
-
+    
     int SDConnected = 0;
     maxBuffer = 0;
     latestMaxBuffer = 0;
-    
+
+    Uart2PrintChar('A');
     while(1)
     {
         if (SD_IN)
@@ -146,15 +145,20 @@ void initPins(void)
 	PPSInput(PPS_U2RX, PPS_RP13);
 
 	// Configure SPI1 so that:
-	//  * (input) SPI1.SDI = B8
-	PPSInput(PPS_SDI1, PPS_RP1);
-	//  * SPI1.SCK is output on B9
+	//  * (input) SPI1.SDI = B10
+	PPSInput(PPS_SDI1, PPS_RP10);
+	//  * SPI1.SCK is output on B15
 	PPSOutput(OUT_FN_PPS_SCK1, OUT_PIN_PPS_RP15);
-	//  * (output) SPI1.SDO = B10
-	PPSOutput(OUT_FN_PPS_SDO1, OUT_PIN_PPS_RP10);
+	//  * (output) SPI1.SDO = B1
+	PPSOutput(OUT_FN_PPS_SDO1, OUT_PIN_PPS_RP1);
 	
 	PPSLock;
+	
+	// Enable pull-up on open-drain card detect pin.
+	CNPU1bits.CN2PUE = 1;
 
+    // Configure all used pins to not be AD pins and
+    // be digital I/O instead.
     AD1PCFGLbits.PCFG0 = 1;
     AD1PCFGLbits.PCFG1 = 1;
     AD1PCFGLbits.PCFG2 = 1;

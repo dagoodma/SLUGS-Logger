@@ -90,6 +90,6 @@ void __attribute__((__interrupt__, __auto_psv__)) _DMA0Interrupt(void)
 	{
 		InterruptCallback(BufferB, UART2_BUFFER_SIZE);
 	}
-	CurrentBuffer ^= 1; //
+ 	CurrentBuffer ^= 1; //
 	IFS0bits.DMA0IF = 0; // Clear the DMA0 Interrupt Flag
 }
