@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "Node.h"
 #include <string.h>
+#include <stdbool.h>
 
 #define CONFIG_READ_SIZE 50
 #define MAX_PREFIX "5"
@@ -146,7 +147,7 @@ int NewSDWriteSector(unsigned char outbuf[BYTES_PER_SECTOR])
         + filePointer->dsk->SecPerClus;
 
     // Write the data
-    int success = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, 0);
+    int success = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, false);
     if (!success) {
         return 0;
     }

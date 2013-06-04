@@ -70,7 +70,7 @@ void Uart2PrintChar(char in)
 void Uart2PrintStr(char *string)
 {
     int i;
-    for (i = 0; i<strlen(string); i++) {
+    for (i = 0; string[i] != '\0'; i++) {
         Uart2PrintChar(string[i]);
     }
 }

@@ -85,8 +85,7 @@ int main(void)
     int SDConnected = 0;
     maxBuffer = 0;
     latestMaxBuffer = 0;
-
-    Uart2PrintChar('A');
+    Uart2PrintChar('N');
     while(1)
     {
         if (SD_IN)
