@@ -86,6 +86,12 @@ int main(void)
     maxBuffer = 0;
     latestMaxBuffer = 0;
     Uart2PrintChar('N');
+    if (RCONbits.BOR) {
+        Uart2PrintChar('!');
+    }
+    if (RCONbits.POR) {
+        Uart2PrintChar('@');
+    }
     while(1)
     {
         if (SD_IN)
