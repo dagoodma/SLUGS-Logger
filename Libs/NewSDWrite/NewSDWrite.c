@@ -11,6 +11,7 @@
 #include "Uart2.h"
 #include <stddef.h>
 #include "NewSDWrite.h"
+#include "DEE Emulation 16-bit.h"
 
 #define CONFIG_READ_SIZE 50
 #define MAX_PREFIX "5"
@@ -64,16 +65,7 @@ long int NewSDInit()
 
     // extracted from the config
     long int baudRate;
-    char fileBase[EIGHT_THREE_LEN] = {};
-
-    // used in the file search
-    char searchFormat[EIGHT_THREE_LEN];
-    char extractFormat[EIGHT_THREE_LEN];
-    SearchRec searchRec;
-    int checkSuff = 0; // Suff = Suffix
-    int maxSuff = 0;
-    char copyInto[EIGHT_THREE_LEN];
-
+    
     // the final file name
     char fileName[EIGHT_THREE_LEN] = {};
 
@@ -87,46 +79,25 @@ long int NewSDInit()
     configText[CONFIG_READ_SIZE] = '\0';
 
     // extract config info
-    if (sscanf(configText, "BAUD %ld"
-        "\nFNAME %" MAX_PREFIX "s", &baudRate, fileBase) < 2) {
+    if (sscanf(configText, "BAUD %ld", &baudRate) < 1) {
         FATAL_ERROR(); // TODO have default config file? maybe not
     }
 
-    // create format strings used in the search
-    sprintf(searchFormat, "%s???.txt", fileBase);
-    sprintf(extractFormat, "%s%s", fileBase, "%3d");
-
-    // use FindFirst and FindNext to search through all files starting with the desired name. Find
-    // the largest suffix of those files.
-    if (FindFirst(searchFormat, ATTR_MASK, &searchRec)) {
-        // no file of that format was found - start at 000
-        maxSuff = 0;
-    } else {
-        do {
-            // check the filename
-            if (searchRec.utf16LFNfoundLength) {
-                if(!utf16toStr(searchRec.utf16LFNfound, copyInto, EIGHT_THREE_LEN)) {
-                    FATAL_ERROR();
-                }
-                sscanf(copyInto, extractFormat, &checkSuff);
-            } else {
-                sscanf(searchRec.filename, extractFormat, &checkSuff);
-            }
-            if (checkSuff > maxSuff) {
-                maxSuff = checkSuff;
-            }
-        } while (!FindNext(&searchRec));
-        maxSuff += 1; // important - increment the file suffix
+    // Read EEPROM to find next file name
+    unsigned int eeRead;
+    while(1) {
+        eeRead = DataEERead(EE_ADDRESS);
+        if (eeRead != 0xFFFF) {
+            break;
+        }
+        DataEEWrite(0x00, EE_ADDRESS);
     }
-    if (maxSuff >= 1000) {
-        FATAL_ERROR();
-    }
-
-    // create the final file name to use
-    sprintf(fileName, "%s%03d.txt", fileBase, maxSuff);
+    // !! CORRECT THE LAST FILE SIZE HERE
+    DataEEWrite(++eeRead, EE_ADDRESS);
 
     // Open a new file
     filePointer = NULL;
+    sprintf(fileName, "%04x.txt", eeRead);
     while (filePointer == NULL) filePointer = FSfopen(fileName, FS_WRITE);
 
     // Initialize data for NewSDWriteSector

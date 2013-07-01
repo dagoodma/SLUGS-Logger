@@ -10,6 +10,7 @@
 #define HEAD_FOOT_LEN 8
 #define HEADER_TAG (('%' << 8) & '^') // '%^'
 #define FOOTER_TAG (('%' << 8) & '$') // '%$'
+#define EE_ADDRESS 1
 
 // a struct to combine data with a header and footer
 typedef struct {

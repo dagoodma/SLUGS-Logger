@@ -72,10 +72,9 @@ int main(void)
 
     while (!SD_IN);
 
-    Uart2Init(115200, Uart2InterruptRoutine); // NewSDInit(), Uart2InterruptRoutine);
-    Uart1Init(BRGVAL);
-
     DataEEInit();
+    Uart2Init(NewSDInit(), Uart2InterruptRoutine);
+    Uart1Init(BRGVAL);
 
     timeStamp = 0;
     Timer2Init(&Timer2InterruptRoutine, 0xFFFF);
@@ -93,7 +92,6 @@ int main(void)
     if (eetest != 0xFFFF) {
         Uart2PrintChar(eetest);
     }
-    DataEEWrite(++eetest, 1);
     
     while(1);
     while(1)
