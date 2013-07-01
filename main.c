@@ -20,6 +20,7 @@
 #include "NewSDWrite.h"
 #include "Node.h"
 #include "Timer2.h"
+#include "DEE Emulation 16-bit.h"
 
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
 #define CB_SIZE (UART2_BUFFER_SIZE * 10)
@@ -71,8 +72,10 @@ int main(void)
 
     while (!SD_IN);
 
-    Uart2Init(NewSDInit(), Uart2InterruptRoutine);
+    Uart2Init(115200, Uart2InterruptRoutine); // NewSDInit(), Uart2InterruptRoutine);
     Uart1Init(BRGVAL);
+
+    DataEEInit();
 
     timeStamp = 0;
     Timer2Init(&Timer2InterruptRoutine, 0xFFFF);
@@ -84,13 +87,15 @@ int main(void)
     int SDConnected = 0;
     maxBuffer = 0;
     latestMaxBuffer = 0;
-    Uart2PrintChar('N');
-    if (RCONbits.BOR) {
-        Uart2PrintChar('!');
+//    Uart2PrintChar('N');
+
+    unsigned int eetest = DataEERead(1);
+    if (eetest != 0xFFFF) {
+        Uart2PrintChar(eetest);
     }
-    if (RCONbits.POR) {
-        Uart2PrintChar('@');
-    }
+    DataEEWrite(++eetest, 1);
+    
+    while(1);
     while(1)
     {
         if (SD_IN)
