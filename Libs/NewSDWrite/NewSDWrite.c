@@ -1,22 +1,23 @@
 #include <xc.h>
-#include <stddef.h>
+#include <stdint.h>
 #include "Libs/Microchip/Include/MDD File System/FSIO.h"
 #include <spi.h>
 #include <math.h>
-#include "NewSDWrite.h"
 #include "Uart2.h"
 #include <stdio.h>
 #include "Node.h"
 #include <string.h>
 #include <stdbool.h>
+#include "Uart2.h"
+#include <stddef.h>
+#include "NewSDWrite.h"
 
 #define CONFIG_READ_SIZE 50
 #define MAX_PREFIX "5"
 #define MAX_SUFFIX "3"
-#define EIGHT_THREE_LEN 8 + 1 + 3 + 1
+#define EIGHT_THREE_LEN (8 + 1 + 3 + 1)
 
 // Directory entry structure
-
 typedef struct {
     char DIR_Name[DIR_NAMESIZE]; // File name
     char DIR_Extension[DIR_EXTENSION]; // File extension
@@ -43,12 +44,16 @@ BYTE Write_File_Entry(FILEOBJ fo, WORD * curEntry);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 int utf16toStr(unsigned short int * origin, char * result, int number);
+uint16_t twoByteChecksum(uint8_t * data, int dataSize);
 
 FSFILE * filePointer;
 
 /**
  * Opens the config file, extracts info, searches for a new filename to use, opens the file for
  * writing
+ * NEEDED FUNCTIONALITY:
+ *  Find previous file used, update it to actual size
+ *  Allocate apporpriate file size for new entry
  * @return Buad rate extracted from the config file
  */
 long int NewSDInit()
@@ -135,19 +140,30 @@ long int NewSDInit()
 
 /**
  * Writes the data in outbuf to the file (pointer)
+ * NEEDED FUNCTIONALITY:
+ *  Calculate checksum DONE
+ *  Add header, etc to given d// '%$'ata DONE
+ *  Allocate multiple clusters when needed
  * @param pointer The FSFILE to write to
  * @param outbuf An array of data (BYTES_PER_SECTOR in legnth)
  * @return 1 if successful, 0 otherwise. 
  */
-int NewSDWriteSector(unsigned char outbuf[BYTES_PER_SECTOR])
+int NewSDWriteSector(Sector sector)
 {
     DWORD CurrentSector = Cluster2Sector(filePointer->dsk, filePointer->ccls)
         + filePointer->sec;
     DWORD SectorLimit = Cluster2Sector(filePointer->dsk, filePointer->ccls)
         + filePointer->dsk->SecPerClus;
 
+    // add header and footer
+    sector.sectorFormat.headerTag = HEADER_TAG;
+    sector.sectorFormat.number = 0x01; // need to figure out how to number these
+    sector.sectorFormat.checksum = twoByteChecksum(sector.sectorFormat.data,
+        sizeof(sector.sectorFormat.data));
+    sector.sectorFormat.footerTag = FOOTER_TAG;
+    
     // Write the data
-    int success = MDD_SDSPI_SectorWrite(CurrentSector, outbuf, false);
+    int success = MDD_SDSPI_SectorWrite(CurrentSector, sector.raw, false);
     if (!success) {
         return 0;
     }
@@ -234,3 +250,26 @@ int utf16toStr(unsigned short int * origin, char * result, int number)
     result[index] = (char) origin[index];
     return 1;
 }
+
+/**
+ * Creates a two byte checksum - used for the sector checksum
+ * return format : [odds][evens]
+ *                 15          0
+ * @param data A pointer to the data to checksum
+ * @param dataSize The size of the data
+ * @return the checksum
+ */
+uint16_t twoByteChecksum(uint8_t * data, int dataSize)
+{
+    int i;
+    uint16_t sum = 0;
+    for (i = 0; i < dataSize; i++) {
+        if (i & 0x01) { // if odd
+            sum ^= (data[i] << 8);
+        } else { // if even
+            sum ^= data[i];
+        }
+    }
+    return sum;
+}
+/* NEW FUNCTION : allocate multiple clusters */

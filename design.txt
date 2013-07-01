@@ -2,14 +2,14 @@ SLUGS-Logger Design Document
 ============================
 
 Basic Primary Requirements
-------------------
+--------------------------
 
 Speed
     Fast enough to keep up with 115200 UART
     
 Buffer
     Enough buffer space to deal with card nonresponses and potential disconnections
-    Conduct tesing to specify minimum buffer
+    *Conduct tesing to specify minimum buffer
     
 Card Preservation
     Does not write to single sectors frequently

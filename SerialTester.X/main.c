@@ -49,14 +49,14 @@ void main() {
     Uart2Init((long)115200, InterruptRoutine);
 
     Uart2PrintChar('!');
-    int i;
-    uint32_t j = 0;
-    for (i = 0; i < 1; i++) {
-        j = 0;
-        while (book[j] != '\0') {
-            Uart2PrintChar(book[j++]);
-        }
-    }
+//    int i;
+//    uint32_t j = 0;
+//    for (i = 0; i < 1; i++) {
+//        j = 0;
+//        while (book[j] != '\0') {
+//            Uart2PrintChar(book[j++]);
+//        }
+//    }
 
     while (1) {
     }

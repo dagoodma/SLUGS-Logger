@@ -140,6 +140,7 @@
 //              will then be able to read from the file or write to the file.
 #define FS_READPLUS     "r+"
 
+/* This block was not originally commented out - it was stepping on the intmax_t from stdint.h
 #ifndef intmax_t
     #ifdef __PIC24F__
         // Summary: A data type indicating the maximum integer size in an architecture
@@ -154,7 +155,7 @@
         #define intmax_t long long
     #endif
 #endif
-
+*/
 
 
 // Summary:  Indicates flag conditions for a file object

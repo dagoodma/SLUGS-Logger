@@ -4156,7 +4156,7 @@ BYTE FILEallocate_new_cluster( FILEOBJ fo, BYTE mode)
     WriteFAT( dsk, curcls, c, FALSE);
 
     // update the FILE structure
-    fo->ccls = c;
+    fo->ccls = c; // Slogger note: might want to comment out this line to preserve ccls of the file
 
     // IF this is a dir, we need to erase the cluster
     // If it's a file, we can leave it- the file size

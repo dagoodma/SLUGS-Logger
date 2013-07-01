@@ -8,16 +8,11 @@
  * have tested, these occur simultaniously, but this is not confirmed. It might happend if the card
  * is taken out while writing to it, but this is also not confirmed.
  */
-#define UART2_BUFFER_SIZE 512
-#define SD_SECTOR_SIZE 512
-#define CB_SIZE 512*10
-#define SD_IN !SD_CD
-
 #include <stdint.h>
 #include "CircularBuffer.h"
 #include <xc.h>
 #include <pps.h>
-// The Uartx.h files need to be included before stddef.h
+// The UartX.h files need to be included before stddef.h
 #include "Uart2.h"
 #include "Uart1.h"
 #include <stddef.h>
@@ -25,6 +20,10 @@
 #include "NewSDWrite.h"
 #include "Node.h"
 #include "Timer2.h"
+
+#define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
+#define CB_SIZE (UART2_BUFFER_SIZE * 10)
+#define SD_IN (!SD_CD)
 
 // Use internal RC to start; we then switch to PLL'd iRC.
 _FOSCSEL(FNOSC_FRC & IESO_OFF);
@@ -106,11 +105,11 @@ int main(void)
             }
             // When we are connected and initialized, poll the buffer, if there
             // is data, write it.
-            unsigned char outData[SD_SECTOR_SIZE];
-            if (CB_PeekMany(&circBuf, outData, SD_SECTOR_SIZE)){
-                if(NewSDWriteSector(outData)){
+            Sector tempSector; // only the data is valid here
+            if (CB_PeekMany(&circBuf, tempSector.sectorFormat.data, UART2_BUFFER_SIZE)){
+                if(NewSDWriteSector(tempSector)){
                     // Remove the data we just written.
-                    CB_Remove(&circBuf, SD_SECTOR_SIZE);
+                    CB_Remove(&circBuf, UART2_BUFFER_SIZE);
                 } else failedWrites++;
             }
         } else {
