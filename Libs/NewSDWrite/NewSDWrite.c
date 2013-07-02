@@ -51,6 +51,7 @@ int NewAllocateMultiple(FSFILE * fo);
 
 FSFILE * filePointer;
 DWORD lastCluster;
+unsigned int fileNumber;
 
 /**
  * Opens the config file, extracts info, searches for a new filename to use, opens the file for
@@ -87,20 +88,19 @@ long int NewSDInit(void)
     }
 
     // Read EEPROM to find next file name
-    unsigned int eeRead;
     while(1) {
-        eeRead = DataEERead(EE_ADDRESS);
-        if (eeRead != 0xFFFF) {
+        fileNumber = DataEERead(EE_ADDRESS);
+        if (fileNumber != 0xFFFF) {
             break;
         }
         DataEEWrite(0x00, EE_ADDRESS);
     }
     // !! CORRECT THE LAST FILE SIZE HERE
-    DataEEWrite(++eeRead, EE_ADDRESS);
+    DataEEWrite(++fileNumber, EE_ADDRESS);
 
     // Open a new file
     filePointer = NULL;
-    sprintf(fileName, "%04x.txt", eeRead);
+    sprintf(fileName, "%04x.txt", fileNumber);
     while (filePointer == NULL) filePointer = FSfopen(fileName, FS_WRITE);
 
     // Initialize data for NewSDWriteSector
@@ -131,7 +131,7 @@ int NewSDWriteSector(Sector sector)
 
     // add header and footer
     sector.sectorFormat.headerTag = HEADER_TAG;
-    sector.sectorFormat.number = 0x01; // need to figure out how to number these
+    sector.sectorFormat.number = fileNumber; // need to figure out how to number these
     sector.sectorFormat.checksum = twoByteChecksum(sector.sectorFormat.data,
         sizeof(sector.sectorFormat.data));
     sector.sectorFormat.footerTag = FOOTER_TAG;
@@ -147,7 +147,9 @@ int NewSDWriteSector(Sector sector)
     if (CurrentSector == SectorLimit - 1) {
         // if this is the last cluster, allocate more
         if(filePointer->ccls == lastCluster) {
-            NewAllocateMultiple(filePointer);
+            if (!NewAllocateMultiple(filePointer)) {
+                return 0;
+            }
         }
         // Set cluster and sector to next cluster in our chain
         if (FILEget_next_cluster(filePointer, 1) != CE_GOOD) {
@@ -162,6 +164,8 @@ int NewSDWriteSector(Sector sector)
 
     // save off the seek
     filePointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
+    
+    return 1;
 }
 
 /**

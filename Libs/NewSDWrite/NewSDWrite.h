@@ -8,8 +8,8 @@
 #define TOTAL_SECTORS 80L
 #define BYTES_PER_SECTOR 512L
 #define HEAD_FOOT_LEN 8
-#define HEADER_TAG (('%' << 8) & '^') // '%^'
-#define FOOTER_TAG (('%' << 8) & '$') // '%$'
+#define HEADER_TAG 0x5E25 // '%^'
+#define FOOTER_TAG 0x2425 // '%$'
 #define EE_ADDRESS 1
 
 // a struct to combine data with a header and footer

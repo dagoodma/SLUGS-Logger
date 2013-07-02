@@ -86,14 +86,13 @@ int main(void)
     int SDConnected = 0;
     maxBuffer = 0;
     latestMaxBuffer = 0;
-//    Uart2PrintChar('N');
+    Uart2PrintChar('N');
 
     unsigned int eetest = DataEERead(1);
     if (eetest != 0xFFFF) {
         Uart2PrintChar(eetest);
     }
     
-    while(1);
     while(1)
     {
         if (SD_IN)
