@@ -47,6 +47,7 @@ extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 int utf16toStr(unsigned short int * origin, char * result, int number);
 uint16_t twoByteChecksum(uint8_t * data, int dataSize);
+int NewAllocateMultiple(FSFILE * fo);
 
 FSFILE * filePointer;
 DWORD lastCluster;
@@ -59,7 +60,7 @@ DWORD lastCluster;
  *  Allocate apporpriate file size for new entry
  * @return Buad rate extracted from the config file
  */
-long int NewSDInit()
+long int NewSDInit(void)
 {
     // used for accessing config file
     FSFILE *configFile = NULL;
@@ -141,12 +142,15 @@ int NewSDWriteSector(Sector sector)
         return 0;
     }
 
-    // Check to see if we need to go to a new cluster;
+    // Check to see if we need to go to a new cluster; !! Also check for end of allocated area
     // else, next sector
     if (CurrentSector == SectorLimit - 1) {
+        // if this is the last cluster, allocate more
+        if(filePointer->ccls == lastCluster) {
+            NewAllocateMultiple(filePointer);
+        }
         // Set cluster and sector to next cluster in our chain
-        if (FILEallocate_new_cluster(filePointer, 0) != CE_GOOD) { // allocate a new cluster
-            // !! Also sets ccls to the new cluster
+        if (FILEget_next_cluster(filePointer, 1) != CE_GOOD) {
             while (1);
         }
         filePointer->sec = 0;
