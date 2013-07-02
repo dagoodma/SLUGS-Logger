@@ -106,9 +106,9 @@ long int NewSDInit(void)
     // Initialize data for NewSDWriteSector
     filePointer->ccls = filePointer->cluster;
 
-    gNeedFATWrite = TRUE;
-    gNeedDataWrite = FALSE;
-    NewFileUpdate(filePointer);
+    // allocate some clusters
+    NewAllocateMultiple(filePointer);
+    
     return baudRate;
 }
 
@@ -157,20 +157,42 @@ int NewSDWriteSector(Sector sector)
     } else {
         filePointer->sec++;
     }
-
-    gNeedFATWrite = TRUE;
-    gNeedDataWrite = FALSE;
-
     // save off the positon
     filePointer->pos = BYTES_PER_SECTOR - 1; // current position in sector (bytes)
 
     // save off the seek
     filePointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
+}
 
-    // now the new size
-    //  #Problem: This might not be accurate
-    filePointer->size += BYTES_PER_SECTOR; // size of file (bytes)
-    if (NewFileUpdate(filePointer)) {
+/**
+ * Allocates multiple clusters to the given file. !! UNTESTED
+ * @param fo Pointer to the file object to allocate to
+ * @return sucess (1) or failure (0)
+ */
+int NewAllocateMultiple(FSFILE * fo)
+{
+    // save the current cluster of the file
+    DWORD clusterSave = fo->ccls;
+
+    // allocate new clusters
+    int i;
+    for (i = 0; i < MULTIPLE_CLUSTERS; i++) {
+        FILEallocate_new_cluster(fo, 0);
+    }
+
+    // store the last cluster in the file
+    lastCluster = fo->ccls;
+
+    // reset current cluster
+    fo->ccls = clusterSave;
+
+    // update file size
+    fo->size += fo->dsk->SecPerClus * MULTIPLE_CLUSTERS * BYTES_PER_SECTOR;
+
+    // save all this to the card
+    gNeedFATWrite = TRUE;
+    gNeedDataWrite = FALSE;
+    if (NewFileUpdate(filePointer)) { // put NewFileUpdates into NewAllocateMultiple
         return 1;
     } else {
         return 0;
@@ -206,36 +228,6 @@ int NewFileUpdate(FSFILE * fo)
     Write_File_Entry(fo, &fHandle);
     
     return 1;
-}
-
-/**
- * Allocates multiple clusters to the given file. !! UNTESTED
- * @param fo Pointer to the file object to allocate to
- * @return sucess (1) or failure (0)
- */
-int NewAllocateMultiple(FSFILE * fo)
-{
-    // save the current cluster of the file
-    DWORD clusterSave = fo->ccls;
-
-    // allocate new clusters
-    int i;
-    for (i = 0; i < MULTIPLE_CLUSTERS; i++) {
-        FILEallocate_new_cluster(fo, 0);
-    }
-
-    // store the last cluster in the file
-    lastCluster = fo->ccls;
-    
-    // reset current cluster
-    fo->ccls = clusterSave;
-    
-    // update file data
-    fo->size += fo->dsk->SecPerClus * MULTIPLE_CLUSTERS * BYTES_PER_SECTOR;
-    return 0;
-    /* Notes
-     * use FILEget_next_cluster for stepping through clusters when writing (not this function)
-     */
 }
 
 /**
