@@ -17,6 +17,7 @@
 #define MAX_PREFIX "5"
 #define MAX_SUFFIX "3"
 #define EIGHT_THREE_LEN (8 + 1 + 3 + 1)
+#define MULTIPLE_CLUSTERS 0x04
 
 // Directory entry structure
 typedef struct {
@@ -48,6 +49,7 @@ int utf16toStr(unsigned short int * origin, char * result, int number);
 uint16_t twoByteChecksum(uint8_t * data, int dataSize);
 
 FSFILE * filePointer;
+DWORD lastCluster;
 
 /**
  * Opens the config file, extracts info, searches for a new filename to use, opens the file for
@@ -200,6 +202,36 @@ int NewFileUpdate(FSFILE * fo)
     Write_File_Entry(fo, &fHandle);
     
     return 1;
+}
+
+/**
+ * Allocates multiple clusters to the given file. !! UNTESTED
+ * @param fo Pointer to the file object to allocate to
+ * @return sucess (1) or failure (0)
+ */
+int NewAllocateMultiple(FSFILE * fo)
+{
+    // save the current cluster of the file
+    DWORD clusterSave = fo->ccls;
+
+    // allocate new clusters
+    int i;
+    for (i = 0; i < MULTIPLE_CLUSTERS; i++) {
+        FILEallocate_new_cluster(fo, 0);
+    }
+
+    // store the last cluster in the file
+    lastCluster = fo->ccls;
+    
+    // reset current cluster
+    fo->ccls = clusterSave;
+    
+    // update file data
+    fo->size += fo->dsk->SecPerClus * MULTIPLE_CLUSTERS * BYTES_PER_SECTOR;
+    return 0;
+    /* Notes
+     * use FILEget_next_cluster for stepping through clusters when writing (not this function)
+     */
 }
 
 /**
