@@ -9,7 +9,7 @@
 #define	UART2_H
 
 #ifndef UART2_BUFFER_SIZE
-#define UART2_BUFFER_SIZE (512 - 8) // the size of an individual ping-ping buffer
+#define UART2_BUFFER_SIZE (512-6) // the size of an individual ping-ping buffer
 #endif
 
 #ifndef FCY

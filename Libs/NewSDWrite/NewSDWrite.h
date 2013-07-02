@@ -7,7 +7,7 @@
 // this cannot be greater than the number of sectors in a cluster
 #define TOTAL_SECTORS 80L
 #define BYTES_PER_SECTOR 512L
-#define HEAD_FOOT_LEN 8
+#define HEAD_FOOT_LEN 6
 #define HEADER_TAG 0x5E25 // '%^'
 #define FOOTER_TAG 0x2425 // '%$'
 #define EE_ADDRESS 1
@@ -15,9 +15,9 @@
 // a struct to combine data with a header and footer
 typedef struct {
     uint16_t headerTag;
-    uint16_t number;
-    uint8_t  data[504];
-    uint16_t checksum;
+    uint8_t number;
+    uint8_t  data[506];
+    uint8_t checksum;
     uint16_t footerTag;
 } SectorFormat;
 

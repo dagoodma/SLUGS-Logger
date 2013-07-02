@@ -46,7 +46,7 @@ BYTE Write_File_Entry(FILEOBJ fo, WORD * curEntry);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 int utf16toStr(unsigned short int * origin, char * result, int number);
-uint16_t twoByteChecksum(uint8_t * data, int dataSize);
+uint8_t Checksum(uint8_t * data, int dataSize);
 int NewAllocateMultiple(FSFILE * fo);
 
 FSFILE * filePointer;
@@ -132,7 +132,7 @@ int NewSDWriteSector(Sector sector)
     // add header and footer
     sector.sectorFormat.headerTag = HEADER_TAG;
     sector.sectorFormat.number = fileNumber; // need to figure out how to number these
-    sector.sectorFormat.checksum = twoByteChecksum(sector.sectorFormat.data,
+    sector.sectorFormat.checksum = Checksum(sector.sectorFormat.data,
         sizeof(sector.sectorFormat.data));
     sector.sectorFormat.footerTag = FOOTER_TAG;
     
@@ -262,16 +262,12 @@ int utf16toStr(unsigned short int * origin, char * result, int number)
  * @param dataSize The size of the data
  * @return the checksum
  */
-uint16_t twoByteChecksum(uint8_t * data, int dataSize)
+uint8_t Checksum(uint8_t * data, int dataSize)
 {
     int i;
-    uint16_t sum = 0;
+    uint8_t sum = 0;
     for (i = 0; i < dataSize; i++) {
-        if (i & 0x01) { // if odd
-            sum ^= (data[i] << 8);
-        } else { // if even
-            sum ^= data[i];
-        }
+        sum ^= data[i];
     }
     return sum;
 }
