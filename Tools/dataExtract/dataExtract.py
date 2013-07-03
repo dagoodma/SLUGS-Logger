@@ -23,23 +23,18 @@ while nextSector:
     #verify header & footer tags
     if nextSector[:2] != b'%^' :
         print("Header Tag Failed")
-        break
+        exit()
     if nextSector[-2:] != b'%$' :
         print("Footer Tag Failed")
-        break
+        exit()
     #verify header number
     if nextSector[2] != fileNumber :
         print("Number Failed")
-        break
+        exit()
     #verify footer checksum
     if nextSector[-3] != checkSum(nextSector[3:-3]):
         print("Checksum Failed")
-        break
+        exit()
     rawLog.write(nextSector[3:-3])
     nextSector = slog.read(512)
-    
-
-#for nextsector in iter(slog.read(512)):
- #   print(chr(nextsector))
-   # print('\r\n')
-    
+print("Success.")
