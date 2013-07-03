@@ -122,7 +122,7 @@ long int NewSDInit(void)
  * @param outbuf An array of data (BYTES_PER_SECTOR in legnth)
  * @return 1 if successful, 0 otherwise. 
  */
-int NewSDWriteSector(Sector sector)
+int NewSDWriteSector(Sector * sector)
 {
     DWORD CurrentSector = Cluster2Sector(filePointer->dsk, filePointer->ccls)
         + filePointer->sec;
@@ -130,14 +130,14 @@ int NewSDWriteSector(Sector sector)
         + filePointer->dsk->SecPerClus;
 
     // add header and footer
-    sector.sectorFormat.headerTag = HEADER_TAG;
-    sector.sectorFormat.number = fileNumber; // need to figure out how to number these
-    sector.sectorFormat.checksum = Checksum(sector.sectorFormat.data,
-        sizeof(sector.sectorFormat.data));
-    sector.sectorFormat.footerTag = FOOTER_TAG;
+    sector->sectorFormat.headerTag = HEADER_TAG;
+    sector->sectorFormat.number = fileNumber; // need to figure out how to number these
+    sector->sectorFormat.checksum = Checksum(sector->sectorFormat.data,
+        sizeof(sector->sectorFormat.data));
+    sector->sectorFormat.footerTag = FOOTER_TAG;
     
     // Write the data
-    int success = MDD_SDSPI_SectorWrite(CurrentSector, sector.raw, false);
+    int success = MDD_SDSPI_SectorWrite(CurrentSector, sector->raw, false);
     if (!success) {
         return 0;
     }

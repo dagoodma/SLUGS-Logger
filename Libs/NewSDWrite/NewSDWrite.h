@@ -16,7 +16,8 @@
 typedef struct {
     uint16_t headerTag;
     uint8_t number;
-    uint8_t  data[506];
+    uint8_t failedWrites;
+    uint8_t  data[505];
     uint8_t checksum;
     uint16_t footerTag;
 } SectorFormat;
@@ -47,6 +48,6 @@ int NewFileUpdate(FSFILE * pointer);
  * Mimics FSfileClose to write file info to the SD card.
  * @param fo The file to update
  */
-int NewSDWriteSector(Sector sector);
+int NewSDWriteSector(Sector * sector);
 
 #endif

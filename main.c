@@ -108,8 +108,9 @@ int main(void)
             // When we are connected and initialized, poll the buffer, if there
             // is data, write it.
             Sector tempSector; // only the data is valid here
+            tempSector.sectorFormat.failedWrites = failedWrites;
             if (CB_PeekMany(&circBuf, tempSector.sectorFormat.data, UART2_BUFFER_SIZE)){
-                if(NewSDWriteSector(tempSector)){
+                if(NewSDWriteSector(&tempSector)){
                     // Remove the data we just written.
                     CB_Remove(&circBuf, UART2_BUFFER_SIZE);
                 } else failedWrites++;
