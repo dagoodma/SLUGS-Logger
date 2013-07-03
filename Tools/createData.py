@@ -6,7 +6,7 @@ if len(sys.argv) < 3 :
     print("takes two arguments: file name, number of sectors")
     exit()
     
-bytesPerSector = 512 - 6
+bytesPerSector = 512 - 7
 file = open(sys.argv[1], "bw")
 n = int(sys.argv[2])
 
