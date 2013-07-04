@@ -13,6 +13,7 @@ if len(sys.argv) < 3 :
     
 header_len = 4
 num_pos = 2
+failed_pos = 3
 check_pos = -3
 footer_len = 3
     # Open files
@@ -21,24 +22,34 @@ rawLog = open(sys.argv[2], "wb") # open the second file for binary writing
 
     # Main loop
 nextSector = slog.read(512)
-fileNumber = nextSector[2]
+fileNumber = nextSector[num_pos]
+sectorNumber = 0
+failedWrites = 0
 while nextSector:
         #process the sector
     #verify header & footer tags
     if nextSector[:2] != b'%^' :
-        print("Header Tag Failed")
+        print("Header Tag Failed at sector " + str(sectorNumber))
+        print(str(failedWrites) + " failed writes")
         exit()
     if nextSector[-2:] != b'%$' :
-        print("Footer Tag Failed")
+        print("Footer Tag Failed at sector " + str(sectorNumber))
+        print(str(failedWrites) + " failed writes")
         exit()
     #verify header number
-    if nextSector[2] != fileNumber :
-        print("Number Failed")
+    if nextSector[num_pos] != fileNumber :
+        print("Number Failed at sector " + str(sectorNumber))
+        print(str(failedWrites) + " failed writes")
         exit()
     #verify footer checksum
-    if nextSector[pos] != checkSum(nextSector[header_len:-footer_len]):
-        print("Checksum Failed")
+    if nextSector[check_pos] != checkSum(nextSector[header_len:-footer_len]):
+        print("Checksum Failed at sector " + str(sectorNumber))
+        print(str(failedWrites) + " failed writes")
         exit()
+    #copy failed writes
+    if nextSector[failed_pos] > failedWrites :
+        failedWrite = nextSector[failed_pos]
     rawLog.write(nextSector[header_len:-footer_len])
+    sectorNumber += 1
     nextSector = slog.read(512)
-print("Success.")
+print("Success. " + str(failedWrites) + " failed writes.")
