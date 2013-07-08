@@ -24,4 +24,6 @@ void Uart2PrintChar(char in); // sends a character with UART2
 
 void Uart2PrintStr(char *string); // sends a string
 
+void Uart2SendBytes(char * buffer, int n);
+
 #endif	/* UART2_H */

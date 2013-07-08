@@ -75,6 +75,19 @@ void Uart2PrintStr(char *string)
     }
 }
 
+/**
+ * Send a certain number of bytes from an array
+ * @param buffer Pointer to the bytes
+ * @param n Size of the buffer in chars
+ */
+void Uart2SendBytes(char * buffer, int n)
+{
+    int i;
+    for (i = 0; i < n; i++) {
+        Uart2PrintChar(buffer[i]);
+    }
+}
+
 
 /**
  * DMA0 Interrupt.

@@ -123,6 +123,9 @@ int main(void)
 
 void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
+    if (Buffer[0] == '\0') { // NOT FOR FINAL CODE
+        Buffer[0] = '0';
+    }
     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
     if(circBuf.dataSize >= maxBuffer) maxBuffer = circBuf.dataSize;
     if(circBuf.dataSize >= latestMaxBuffer) latestMaxBuffer = circBuf.dataSize;
