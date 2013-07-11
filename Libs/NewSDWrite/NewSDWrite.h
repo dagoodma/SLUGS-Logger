@@ -16,7 +16,7 @@
 typedef struct {
     uint16_t headerTag;
     uint8_t number;
-    uint8_t failedWrites;
+    uint8_t maxBuffer;
     uint8_t  data[505];
     uint8_t checksum;
     uint16_t footerTag;

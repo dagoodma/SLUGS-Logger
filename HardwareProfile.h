@@ -491,14 +491,14 @@
             #define SD_CS_ANSEL			ANSELBbits.ANSB9
             
             // Description: SD-SPI Card Detect Input bit
-            #define SD_CD               PORTGbits.RG0
+            #define SD_CD               PORTBbits.RB0
             // Description: SD-SPI Card Detect TRIS bit
-            #define SD_CD_TRIS          TRISGbits.TRISG0
+            #define SD_CD_TRIS          TRISBbits.TRISB0
 
             // Description: SD-SPI Write Protect Check Input bit
-            #define SD_WE               PORTGbits.RG1
+            #define SD_WE               0
             // Description: SD-SPI Write Protect Check TRIS bit
-            #define SD_WE_TRIS          TRISGbits.TRISG1
+            #define SD_WE_TRIS          TRISAbits.TRISA2
 
 		    // Description: SD-SPI Analog/Digital Select ANSEL bit
             #define SD_SCK_ANSEL	ANSELGbits.ANSG6
@@ -525,11 +525,11 @@
             // Tris pins for SCK/SDI/SDO lines
 
             // Description: The TRIS bit for the SCK pin
-            #define SPICLOCK            TRISGbits.TRISG6
+            #define SPICLOCK            TRISBbits.TRISB15
             // Description: The TRIS bit for the SDI pin
-            #define SPIIN               TRISGbits.TRISG7
+            #define SPIIN               TRISBbits.TRISB10
             // Description: The TRIS bit for the SDO pin
-            #define SPIOUT              TRISGbits.TRISG8
+            #define SPIOUT              TRISBbits.TRISB1
 #elif defined __dsPIC33F__
 
         // Description: SD-SPI Chip Select Output bit

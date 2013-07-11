@@ -23,10 +23,10 @@
 #include "DEE Emulation 16-bit.h"
 
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
-#define CB_SIZE (UART2_BUFFER_SIZE * 10)
+#define CB_SIZE (UART2_BUFFER_SIZE * 12)
 #define SD_IN (!SD_CD)
 
-// Use internal RC to start; we then switch to PLL'd iRC.
+// Use internal RC to start; we then switch to PLL'd iRC. THIS IS FOR THE 33F
 _FOSCSEL(FNOSC_FRC & IESO_OFF);
 // Clock Pragmas
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
@@ -42,6 +42,7 @@ void initPins(void);
 
 CircularBuffer circBuf;
 unsigned char cbData[CB_SIZE];
+Sector tempSector;
 
 
 // for diagnostics
@@ -74,10 +75,8 @@ int main(void)
 
     DataEEInit();
     Uart2Init(NewSDInit(), Uart2InterruptRoutine);
-    Uart1Init(BRGVAL);
 
     timeStamp = 0;
-    Timer2Init(&Timer2InterruptRoutine, 0xFFFF);
 
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) {
         FATAL_ERROR();
@@ -107,12 +106,13 @@ int main(void)
             }
             // When we are connected and initialized, poll the buffer, if there
             // is data, write it.
-            Sector tempSector; // only the data is valid here
-            tempSector.sectorFormat.failedWrites = failedWrites;
+            
+            tempSector.sectorFormat.maxBuffer = maxBuffer/505;
             if (CB_PeekMany(&circBuf, tempSector.sectorFormat.data, UART2_BUFFER_SIZE)){
                 if(NewSDWriteSector(&tempSector)){
                     // Remove the data we just written.
                     CB_Remove(&circBuf, UART2_BUFFER_SIZE);
+//                    maxBuffer = 0; // reset the buffer count for the next time we send
                 } else failedWrites++;
             }
         } else {
@@ -128,19 +128,6 @@ void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
     }
     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
     if(circBuf.dataSize >= maxBuffer) maxBuffer = circBuf.dataSize;
-    if(circBuf.dataSize >= latestMaxBuffer) latestMaxBuffer = circBuf.dataSize;
-}
-
-void Timer2InterruptRoutine(void)
-{
-    timeStamp += 1;
-
-    Uart1WriteByte('!');
-    Uart1WriteData(&timeStamp, sizeof(timeStamp));
-    Uart1WriteByte(latestMaxBuffer >> 9);
-    Uart1WriteByte(maxBuffer >> 9);
-    Uart1WriteData(&failedWrites, sizeof(failedWrites));
-    latestMaxBuffer = 0;
 }
 
 /**
@@ -148,31 +135,18 @@ void Timer2InterruptRoutine(void)
  */
 void initPins(void)
 {
+    // And configure the Peripheral Pin Select pins: THIS IS FOR THE 33E
     PPSUnLock;
-    
+    // To enable ECAN1 pins: TX on 7, RX on 4
+    PPSOutput(OUT_FN_PPS_C1TX, OUT_PIN_PPS_RP39);
+    PPSInput(PPS_C1RX, PPS_RP20);
+
     // To enable UART1 pins: TX on 11, RX on 13
-	PPSOutput(OUT_FN_PPS_U2TX, OUT_PIN_PPS_RP11);
-	PPSInput(PPS_U2RX, PPS_RP13);
+    PPSOutput(OUT_FN_PPS_U1TX, OUT_PIN_PPS_RP43);
+    PPSInput(PPS_U1RX, PPS_RPI45);
+    PPSLock;
 
-	// Configure SPI1 so that:
-	//  * (input) SPI1.SDI = B10
-	PPSInput(PPS_SDI1, PPS_RP10);
-	//  * SPI1.SCK is output on B15
-	PPSOutput(OUT_FN_PPS_SCK1, OUT_PIN_PPS_RP15);
-	//  * (output) SPI1.SDO = B1
-	PPSOutput(OUT_FN_PPS_SDO1, OUT_PIN_PPS_RP1);
-	
-	PPSLock;
-	
-	// Enable pull-up on open-drain card detect pin.
-	CNPU1bits.CN2PUE = 1;
-
-    // Configure all used pins to not be AD pins and
-    // be digital I/O instead.
-    AD1PCFGLbits.PCFG0 = 1;
-    AD1PCFGLbits.PCFG1 = 1;
-    AD1PCFGLbits.PCFG2 = 1;
-    AD1PCFGLbits.PCFG3 = 1;
-    AD1PCFGLbits.PCFG4 = 1;
-    AD1PCFGLbits.PCFG5 = 1;
+    // Disable A/D functions on pins
+    ANSELA = 0;
+    ANSELB = 0;
 }
