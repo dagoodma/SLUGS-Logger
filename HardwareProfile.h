@@ -483,17 +483,17 @@
     #elif defined (__dsPIC33E__) || defined (__PIC24E__)
 
             // Description: SD-SPI Chip Select Output bit
-            #define SD_CS               LATBbits.LATB9
+            #define SD_CS               PORTBbits.RB0
             // Description: SD-SPI Chip Select TRIS bit
-            #define SD_CS_TRIS          TRISBbits.TRISB9
+            #define SD_CS_TRIS          TRISBbits.TRISB0
 
 		    // Description: SD-SPI Analog/Digital Select ANSEL bit
-            #define SD_CS_ANSEL			ANSELBbits.ANSB9
+            #define SD_CS_ANSEL		0   //ANSELBbits.ANSB9
             
             // Description: SD-SPI Card Detect Input bit
-            #define SD_CD               PORTBbits.RB0
+            #define SD_CD               !PORTAbits.RA0
             // Description: SD-SPI Card Detect TRIS bit
-            #define SD_CD_TRIS          TRISBbits.TRISB0
+            #define SD_CD_TRIS          TRISAbits.TRISA0
 
             // Description: SD-SPI Write Protect Check Input bit
             #define SD_WE               0
@@ -501,26 +501,26 @@
             #define SD_WE_TRIS          TRISAbits.TRISA2
 
 		    // Description: SD-SPI Analog/Digital Select ANSEL bit
-            #define SD_SCK_ANSEL	ANSELGbits.ANSG6
-            #define SD_SDI_ANSEL	ANSELGbits.ANSG7
-            #define SD_SDO_ANSEL	ANSELGbits.ANSG8
+            #define SD_SCK_ANSEL	0   //ANSELGbits.ANSG6
+            #define SD_SDI_ANSEL	0   //ANSELGbits.ANSG7
+            #define SD_SDO_ANSEL	0   //ANSELGbits.ANSG8
             
             // Description: The main SPI control register
-            #define SPICON1             SPI2CON1
+            #define SPICON1             SPI1CON1
             // Description: The SPI status register
-            #define SPISTAT             SPI2STAT
+            #define SPISTAT             SPI1STAT
             // Description: The SPI Buffer
-            #define SPIBUF              SPI2BUF
+            #define SPIBUF              SPI1BUF
             // Description: The receive buffer full bit in the SPI status register
-            #define SPISTAT_RBF         SPI2STATbits.SPIRBF
+            #define SPISTAT_RBF         SPI1STATbits.SPIRBF
             // Description: The bitwise define for the SPI control register (i.e. _____bits)
-            #define SPICON1bits         SPI2CON1bits
+            #define SPICON1bits         SPI1CON1bits
             // Description: The bitwise define for the SPI status register (i.e. _____bits)
-            #define SPISTATbits         SPI2STATbits
+            #define SPISTATbits         SPI1STATbits
             // Description: The enable bit for the SPI module
-            #define SPIENABLE           SPI2STATbits.SPIEN
+            #define SPIENABLE           SPI1STATbits.SPIEN
             // Description: The definition for the SPI baud rate generator register
-            #define SPIBRG			    SPI2BRG
+            #define SPIBRG              0 // SPI2BRG
 
             // Tris pins for SCK/SDI/SDO lines
 

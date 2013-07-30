@@ -2,8 +2,8 @@
 #include "Uart2.h"
 #include <string.h>
 
-unsigned char BufferA[UART2_BUFFER_SIZE] __attribute__((space(dma)));
-unsigned char BufferB[UART2_BUFFER_SIZE] __attribute__((space(dma)));
+unsigned char BufferA[UART2_BUFFER_SIZE];
+unsigned char BufferB[UART2_BUFFER_SIZE];
 
 void (*InterruptCallback)(unsigned char *, int);
 
@@ -42,8 +42,10 @@ void Uart2Init(long int baudRate, void (*Callback)(unsigned char *, int))
 	DMA0REQ = 0x001E; // Select UART2 Reciever
 
 	DMA0PAD = (volatile unsigned int) &U2RXREG;
-	DMA0STA = __builtin_dmaoffset(BufferA);
-	DMA0STB = __builtin_dmaoffset(BufferB);
+	DMA0STAL = (unsigned int)&BufferA;
+    DMA0STAH = (unsigned int)&BufferA;
+	DMA0STBL = (unsigned int)&BufferB;
+    DMA0STBH = (unsigned int)&BufferB;
 
 	IFS0bits.DMA0IF = 0;
 	IEC0bits.DMA0IE = 1; // Enable DMA interrupt

@@ -26,14 +26,13 @@
 #define CB_SIZE (UART2_BUFFER_SIZE * 12)
 #define SD_IN (!SD_CD)
 
-// Use internal RC to start; we then switch to PLL'd iRC. THIS IS FOR THE 33F
-_FOSCSEL(FNOSC_FRC & IESO_OFF);
-// Clock Pragmas
-_FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
-// Disable watchdog timer
-_FWDT(FWDTEN_OFF);
-// Disable JTAG and specify port 3 for ICD pins.
-_FICD(JTAGEN_OFF & ICS_PGD3);
+// Initial setup for the clock
+_FGS( GCP_OFF & GWRP_OFF )
+_FOSCSEL( FNOSC_FRC & IESO_OFF )
+_FOSC( FCKSM_CSDCMD & OSCIOFNC_ON & POSCMD_NONE )
+_FWDT( FWDTEN_OFF & PLLKEN_ON )
+_FICD( JTAGEN_OFF & ICS_PGD2 )
+// Inital setup for the clock
 
 void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize);
 void Timer2InterruptRoutine(void);
@@ -56,18 +55,16 @@ uint32_t failedWrites;
  */
 int main(void)
 {
-    // Switch the clock over to 80MHz.
-    PLLFBD = 63;            // M = 65
-    CLKDIVbits.PLLPOST = 0; // N1 = 2
-    CLKDIVbits.PLLPRE = 1;  // N2 = 3
+    // Configure Oscillator to operate the device at 40Mhz
+    // Fosc= Fin*M/(N1*N2), Fcy=Fosc/2
+    // Fosc= 7.37*43/(2*2)=80Mhz for 7.37 input clock
+    PLLFBD = 43;                  // M=43
+    CLKDIVbits.PLLPOST=0;       // N1=2
+    CLKDIVbits.PLLPRE=0;        // N2=2
+    OSCTUN=0;                   // Tune FRC oscillator, if FRC is used
 
-    __builtin_write_OSCCONH(0x01); // Initiate Clock Switch to
-
-    __builtin_write_OSCCONL(OSCCON | 0x01); // Start clock switching
-
-    while (OSCCONbits.COSC != 1); // Wait for Clock switch to occur
-
-    while (OSCCONbits.LOCK != 1);
+    // Disable Watch Dog Timer
+    RCONbits.SWDTEN=0;
     
     initPins();
 
@@ -135,7 +132,7 @@ void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
  */
 void initPins(void)
 {
-    // And configure the Peripheral Pin Select pins: THIS IS FOR THE 33E
+    // And configure the Peripheral Pin Select pins:
     PPSUnLock;
     // To enable ECAN1 pins: TX on 7, RX on 4
     PPSOutput(OUT_FN_PPS_C1TX, OUT_PIN_PPS_RP39);
@@ -144,6 +141,11 @@ void initPins(void)
     // To enable UART1 pins: TX on 11, RX on 13
     PPSOutput(OUT_FN_PPS_U1TX, OUT_PIN_PPS_RP43);
     PPSInput(PPS_U1RX, PPS_RPI45);
+    
+    // To enable SPI1 pins: DO on 21(RB10/RP42), DI on 5(RB1/RPI33), CLK on 26(RB15/RPI47)
+    PPSOutput(OUT_FN_PPS_SDO1, OUT_PIN_PPS_RP42);
+    PPSInput(PPS_SDI1, PPS_RPI33);
+    PPSInput(PPS_SCK1IN, PPS_RPI47);
     PPSLock;
 
     // Disable A/D functions on pins

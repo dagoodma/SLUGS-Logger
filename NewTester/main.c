@@ -16,14 +16,13 @@
 
 #define SD_IN (!SD_CD)
 
-// Use internal RC to start; we then switch to PLL'd iRC.
-_FOSCSEL(FNOSC_FRC & IESO_OFF);
-// Clock Pragmas
-_FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
-// Disable watchdog timer
-_FWDT(FWDTEN_OFF);
-// Disable JTAG and specify port 3 for ICD pins.
-_FICD(JTAGEN_OFF & ICS_PGD3);
+// Initial setup for the clock
+_FGS( GCP_OFF & GWRP_OFF )
+_FOSCSEL( FNOSC_FRC & IESO_OFF )
+_FOSC( FCKSM_CSDCMD & OSCIOFNC_ON & POSCMD_NONE )
+_FWDT( FWDTEN_OFF & PLLKEN_ON )
+_FICD( JTAGEN_OFF & ICS_PGD2 )
+// Inital setup for the clock
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize);
 char checksum(char * data, int dataSize);
@@ -34,22 +33,25 @@ void initPins(void);
  */
 int main()
 {
-    // Switch the clock over to 80MHz.
-    PLLFBD = 63; // M = 65
-    CLKDIVbits.PLLPOST = 0; // N1 = 2
-    CLKDIVbits.PLLPRE = 1; // N2 = 3
+    // Configure Oscillator to operate the device at 40Mhz
+    // Fosc= Fin*M/(N1*N2), Fcy=Fosc/2
+    // Fosc= 7.37*43/(2*2)=80Mhz for 7.37 input clock
+    PLLFBD = 43;                  // M=43
+    CLKDIVbits.PLLPOST=0;       // N1=2
+    CLKDIVbits.PLLPRE=0;        // N2=2
+    OSCTUN=0;                   // Tune FRC oscillator, if FRC is used
 
-    __builtin_write_OSCCONH(0x01); // Initiate Clock Switch to
-
-    __builtin_write_OSCCONL(OSCCON | 0x01); // Start clock switching
-
-    while (OSCCONbits.COSC != 1); // Wait for Clock switch to occur
-
-    while (OSCCONbits.LOCK != 1);
+    // Disable Watch Dog Timer
+    RCONbits.SWDTEN=0;
     
     initPins();
     
     Uart2Init(115200L, InterruptRoutine);
+//    TRISAbits.TRISA4 = 0;
+//    LATAbits.LATA4 = 0;
+//    while(1) {
+//        LATAbits.LATA4 = SD_IN;
+//    }
 
     while (!SD_IN);
     
@@ -93,31 +95,18 @@ char checksum(char * data, int dataSize)
  */
 void initPins(void)
 {
+    // And configure the Peripheral Pin Select pins:
     PPSUnLock;
+    // To enable ECAN1 pins: TX on 7, RX on 4
+    PPSOutput(OUT_FN_PPS_C1TX, OUT_PIN_PPS_RP39);
+    PPSInput(PPS_C1RX, PPS_RP20);
 
     // To enable UART1 pins: TX on 11, RX on 13
-    PPSOutput(OUT_FN_PPS_U2TX, OUT_PIN_PPS_RP11);
-    PPSInput(PPS_U2RX, PPS_RP13);
-
-    // Configure SPI1 so that:
-    //  * (input) SPI1.SDI = B10
-    PPSInput(PPS_SDI1, PPS_RP10);
-    //  * SPI1.SCK is output on B15
-    PPSOutput(OUT_FN_PPS_SCK1, OUT_PIN_PPS_RP15);
-    //  * (output) SPI1.SDO = B1
-    PPSOutput(OUT_FN_PPS_SDO1, OUT_PIN_PPS_RP1);
-
+    PPSOutput(OUT_FN_PPS_U1TX, OUT_PIN_PPS_RP43);
+    PPSInput(PPS_U1RX, PPS_RPI45);
     PPSLock;
 
-    // Enable pull-up on open-drain card detect pin.
-    CNPU1bits.CN2PUE = 1;
-
-    // Configure all used pins to not be AD pins and
-    // be digital I/O instead.
-    AD1PCFGLbits.PCFG0 = 1;
-    AD1PCFGLbits.PCFG1 = 1;
-    AD1PCFGLbits.PCFG2 = 1;
-    AD1PCFGLbits.PCFG3 = 1;
-    AD1PCFGLbits.PCFG4 = 1;
-    AD1PCFGLbits.PCFG5 = 1;
+    // Disable A/D functions on pins
+    ANSELA = 0;
+    ANSELB = 0;
 }

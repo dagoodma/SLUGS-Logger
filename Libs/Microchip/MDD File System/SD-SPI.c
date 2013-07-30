@@ -439,10 +439,10 @@ void MDD_SDSPI_InitIO (void)
     SD_WE_TRIS = INPUT;            //Write Protect - input
 
 #if defined	(__dsPIC33E__) || defined (__PIC24E__)
-    SD_CS_ANSEL = 0;
-    SD_SCK_ANSEL = 0;
-    SD_SDI_ANSEL = 0;
-    SD_SDO_ANSEL = 0;
+//    SD_CS_ANSEL = 0; // commented out because we turn these off at startup anyway
+//    SD_SCK_ANSEL = 0;
+//    SD_SDI_ANSEL = 0;
+//    SD_SDO_ANSEL = 0;
 #endif    
 }
 
