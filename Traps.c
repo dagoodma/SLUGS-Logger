@@ -21,12 +21,14 @@ void __attribute__((interrupt, no_auto_psv)) _AddressError(void)
 	INTCON1bits.ADDRERR = 0;
 	TRISAbits.TRISA1 = 0;
     LATAbits.LATA1 = 1;
+    FATAL_ERROR();
 }
 void __attribute__((interrupt, no_auto_psv)) _StackError(void)
 {
 	INTCON1bits.STKERR = 0;
     TRISAbits.TRISA0 = 0;
     LATAbits.LATA0 = 1;
+    FATAL_ERROR();
 }
 
 void __attribute__((interrupt, no_auto_psv)) _MathError(void)

@@ -53,6 +53,8 @@ int main()
 //        LATAbits.LATA4 = SD_IN;
 //    }
 
+    Uart2PrintChar('S');
+    printf("S");
     while (!SD_IN);
     
     // initialize the file system, open the file, read the file and send in chunks
@@ -101,9 +103,9 @@ void initPins(void)
     PPSOutput(OUT_FN_PPS_C1TX, OUT_PIN_PPS_RP39);
     PPSInput(PPS_C1RX, PPS_RP20);
 
-    // To enable UART1 pins: TX on 11, RX on 13
-    PPSOutput(OUT_FN_PPS_U1TX, OUT_PIN_PPS_RP43);
-    PPSInput(PPS_U1RX, PPS_RPI45);
+    // To enable UART2 pins: TX on 11, RX on 13
+    PPSOutput(OUT_FN_PPS_U2TX, OUT_PIN_PPS_RP43);
+    PPSInput(PPS_U2RX, PPS_RPI45);
     PPSLock;
 
     // Disable A/D functions on pins

@@ -141,11 +141,6 @@ void initPins(void)
     // To enable UART1 pins: TX on 11, RX on 13
     PPSOutput(OUT_FN_PPS_U1TX, OUT_PIN_PPS_RP43);
     PPSInput(PPS_U1RX, PPS_RPI45);
-    
-    // To enable SPI1 pins: DO on 21(RB10/RP42), DI on 5(RB1/RPI33), CLK on 26(RB15/RPI47)
-    PPSOutput(OUT_FN_PPS_SDO1, OUT_PIN_PPS_RP42);
-    PPSInput(PPS_SDI1, PPS_RPI33);
-    PPSInput(PPS_SCK1IN, PPS_RPI47);
     PPSLock;
 
     // Disable A/D functions on pins

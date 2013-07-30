@@ -13,7 +13,7 @@
 #endif
 
 #ifndef FCY
-#define FCY 40000000 // assumes 40Mhz freq
+#define FCY 40000000UL // assumes 80Mhz freq (FCY / 2)
 #endif
 #define BAUDRATE 115200 // assumes 115200 baud rate
 #define BRGVAL ((FCY/BAUDRATE)/16)-1 // used in Uart2Init()
