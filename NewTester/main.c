@@ -16,13 +16,17 @@
 
 #define SD_IN (!SD_CD)
 
-// Initial setup for the clock
-_FGS( GCP_OFF & GWRP_OFF )
-_FOSCSEL( FNOSC_FRC & IESO_OFF )
-_FOSC( FCKSM_CSDCMD & OSCIOFNC_ON & POSCMD_NONE )
-_FWDT( FWDTEN_OFF & PLLKEN_ON )
-_FICD( JTAGEN_OFF & ICS_PGD2 )
-// Inital setup for the clock
+/*
+ * Pic shadow register pragmas.  These set main oscillator sources, and
+ * other low-level hardware stuff like PGD/PGC (debug/programming) pin positions.
+*/
+#ifdef _FSS       /* for chip with memory protection options */
+_FSS( RSS_NO_RAM & SSS_NO_FLASH & SWRP_WRPROTECT_OFF )
+#endif
+_FOSCSEL(FNOSC_FRC & PWMLOCK_OFF);
+_FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
+_FWDT(FWDTEN_OFF);
+_FICD(JTAGEN_OFF & ICS_PGD2);
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize);
 char checksum(char * data, int dataSize);
@@ -33,16 +37,22 @@ void initPins(void);
  */
 int main()
 {
-    // Configure Oscillator to operate the device at 40Mhz
-    // Fosc= Fin*M/(N1*N2), Fcy=Fosc/2
-    // Fosc= 7.37*43/(2*2)=80Mhz for 7.37 input clock
-    PLLFBD = 43;                  // M=43
-    CLKDIVbits.PLLPOST=0;       // N1=2
-    CLKDIVbits.PLLPRE=0;        // N2=2
-    OSCTUN=0;                   // Tune FRC oscillator, if FRC is used
+    //Clock init  M=43, N1,2 = 2 == 39.61MIPS
+	PLLFBD = 43;
+	CLKDIVbits.PLLPOST = 0; // N1 = 2
+	CLKDIVbits.PLLPRE = 0; // N2 = 2
+	OSCTUN = 0;
+	RCONbits.SWDTEN = 0;
 
-    // Disable Watch Dog Timer
-    RCONbits.SWDTEN=0;
+	__builtin_write_OSCCONH(0x01); // Initiate Clock Switch to Primary (3?)
+
+	__builtin_write_OSCCONL(0x01); // Start clock switching
+
+	while (OSCCONbits.COSC != 0b001); // Wait for Clock switch to occur
+
+	while (OSCCONbits.LOCK != 1) {
+	};
+	//End of clock init.
     
     initPins();
     
@@ -54,7 +64,6 @@ int main()
 //    }
 
     Uart2PrintChar('S');
-    printf("S");
     while (!SD_IN);
     
     // initialize the file system, open the file, read the file and send in chunks
