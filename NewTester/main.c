@@ -64,7 +64,7 @@ int main()
 //    }
 
     Uart2PrintChar('S');
-    while (!SD_IN);
+//    while (!SD_IN);
     
     // initialize the file system, open the file, read the file and send in chunks
     FSInit();
@@ -115,6 +115,11 @@ void initPins(void)
     // To enable UART2 pins: TX on 11, RX on 13
     PPSOutput(OUT_FN_PPS_U2TX, OUT_PIN_PPS_RP43);
     PPSInput(PPS_U2RX, PPS_RPI45);
+    
+    // enable the SPI stuff: clock, in, out
+    PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
+    PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
+    PPSInput(PPS_SDI2, PPS_RP42);
     PPSLock;
 
     // Disable A/D functions on pins

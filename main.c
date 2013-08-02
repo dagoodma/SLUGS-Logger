@@ -3,10 +3,6 @@
  * Author: Jesse
  *
  * Created on February 12, 2013, 11:17 AM
- *
- * Known bug: Sometimes taking the SD card out causes a stack and/or address error. As far as we
- * have tested, these occur simultaniously, but this is not confirmed. It might happend if the card
- * is taken out while writing to it, but this is also not confirmed.
  */
 #include <stdint.h>
 #include "CircularBuffer.h"

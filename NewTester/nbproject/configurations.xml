@@ -89,7 +89,7 @@
         <property key="enable-symbols" value="true"/>
         <property key="enable-unroll-loops" value="false"/>
         <property key="extra-include-directories"
-                  value="/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/NewSDWrite;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/Timer2;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/Uart1;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/Uart2;/home/asl/Documents/jdharkin/SLUGS-Logger;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/Microchip/Include;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/DEE"/>
+                  value="/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/NewSDWrite;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/Timer2;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/Uart1;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/Uart2;/home/asl/Documents/jdharkin/SLUGS-Logger;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/Microchip/Include;/home/asl/Documents/jdharkin/SLUGS-Logger/Libs/DEE;../Libs/Microchip/Include;../;../Libs/Uart2"/>
         <property key="isolate-each-function" value="false"/>
         <property key="keep-inline" value="false"/>
         <property key="oXC16gcc-align-arr" value="false"/>

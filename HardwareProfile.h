@@ -506,30 +506,30 @@
             #define SD_SDO_ANSEL	0   //ANSELGbits.ANSG8
             
             // Description: The main SPI control register
-            #define SPICON1             SPI1CON1
+            #define SPICON1             SPI2CON1
             // Description: The SPI status register
-            #define SPISTAT             SPI1STAT
+            #define SPISTAT             SPI2STAT
             // Description: The SPI Buffer
-            #define SPIBUF              SPI1BUF
+            #define SPIBUF              SPI2BUF
             // Description: The receive buffer full bit in the SPI status register
-            #define SPISTAT_RBF         SPI1STATbits.SPIRBF
+            #define SPISTAT_RBF         SPI2STATbits.SPIRBF
             // Description: The bitwise define for the SPI control register (i.e. _____bits)
-            #define SPICON1bits         SPI1CON1bits
+            #define SPICON1bits         SPI2CON1bits
             // Description: The bitwise define for the SPI status register (i.e. _____bits)
-            #define SPISTATbits         SPI1STATbits
+            #define SPISTATbits         SPI2STATbits
             // Description: The enable bit for the SPI module
-            #define SPIENABLE           SPI1STATbits.SPIEN
+            #define SPIENABLE           SPI2STATbits.SPIEN
             // Description: The definition for the SPI baud rate generator register
             #define SPIBRG              0 // SPI2BRG
 
             // Tris pins for SCK/SDI/SDO lines
 
             // Description: The TRIS bit for the SCK pin
-            #define SPICLOCK            TRISBbits.TRISB15
+            #define SPICLOCK            TRISBbits.TRISB9
             // Description: The TRIS bit for the SDI pin
             #define SPIIN               TRISBbits.TRISB10
             // Description: The TRIS bit for the SDO pin
-            #define SPIOUT              TRISBbits.TRISB1
+            #define SPIOUT              TRISBbits.TRISB8
 #elif defined __dsPIC33F__
 
         // Description: SD-SPI Chip Select Output bit
