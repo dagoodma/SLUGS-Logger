@@ -63,8 +63,8 @@ int main()
 //        LATAbits.LATA4 = SD_IN;
 //    }
 
-    Uart2PrintChar('S');
-//    while (!SD_IN);
+//    Uart2PrintChar('S');
+    while (!SD_IN);
     
     // initialize the file system, open the file, read the file and send in chunks
     FSInit();

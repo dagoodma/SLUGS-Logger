@@ -19,7 +19,7 @@
 #include "DEE Emulation 16-bit.h"
 
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
-#define CB_SIZE (UART2_BUFFER_SIZE * 12)
+#define CB_SIZE (UART2_BUFFER_SIZE * 38)
 #define SD_IN (!SD_CD)
 
 // Initial setup for the clock
@@ -139,9 +139,14 @@ void initPins(void)
     PPSOutput(OUT_FN_PPS_C1TX, OUT_PIN_PPS_RP39);
     PPSInput(PPS_C1RX, PPS_RP20);
 
-    // To enable UART1 pins: TX on 11, RX on 13
-    PPSOutput(OUT_FN_PPS_U1TX, OUT_PIN_PPS_RP43);
-    PPSInput(PPS_U1RX, PPS_RPI45);
+    // To enable UART2 pins: TX on 11, RX on 13
+    PPSOutput(OUT_FN_PPS_U2TX, OUT_PIN_PPS_RP43);
+    PPSInput(PPS_U2RX, PPS_RPI45);
+
+    // enable the SPI stuff: clock, in, out
+    PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
+    PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
+    PPSInput(PPS_SDI2, PPS_RP42);
     PPSLock;
 
     // Disable A/D functions on pins
