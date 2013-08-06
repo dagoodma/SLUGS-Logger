@@ -68,8 +68,12 @@ int main()
     
     // initialize the file system, open the file, read the file and send in chunks
     FSInit();
+    FSFILE * newFile = FSfopen("testfile.txt", FS_WRITE);
+    char text[] = "If this prints over the UART, then file writing and reading both work.";
+    FSfwrite(text, 1, sizeof (text), newFile);
+    FSfclose(newFile);
 
-    FSFILE * openFile = FSfopen("send.txt", FS_READ);
+    FSFILE * openFile = FSfopen("testfile.txt", FS_READ);
 
     char toSend[512];
     int n;

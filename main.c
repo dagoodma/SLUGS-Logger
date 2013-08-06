@@ -26,7 +26,7 @@
 _FOSCSEL(FNOSC_FRC & PWMLOCK_OFF);
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
 _FWDT(FWDTEN_OFF);
-_FICD(JTAGEN_OFF & ICS_PGD3);
+_FICD(JTAGEN_OFF & ICS_PGD2);
 // Inital setup for the clock
 
 void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize);
