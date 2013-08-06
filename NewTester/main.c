@@ -38,42 +38,33 @@ void initPins(void);
 int main()
 {
     //Clock init  M=43, N1,2 = 2 == 39.61MIPS
-	PLLFBD = 43;
-	CLKDIVbits.PLLPOST = 0; // N1 = 2
-	CLKDIVbits.PLLPRE = 0; // N2 = 2
-	OSCTUN = 0;
-	RCONbits.SWDTEN = 0;
+    PLLFBD = 43;
+    CLKDIVbits.PLLPOST = 0; // N1 = 2
+    CLKDIVbits.PLLPRE = 0; // N2 = 2
+    OSCTUN = 0;
+    RCONbits.SWDTEN = 0;
 
-	__builtin_write_OSCCONH(0x01); // Initiate Clock Switch to Primary (3?)
+    __builtin_write_OSCCONH(0x01); // Initiate Clock Switch to Primary (3?)
 
-	__builtin_write_OSCCONL(0x01); // Start clock switching
+    __builtin_write_OSCCONL(0x01); // Start clock switching
 
-	while (OSCCONbits.COSC != 0b001); // Wait for Clock switch to occur
+    while (OSCCONbits.COSC != 0b001); // Wait for Clock switch to occur
 
-	while (OSCCONbits.LOCK != 1) {
-	};
-	//End of clock init.
+    while (OSCCONbits.LOCK != 1) {
+    };
+    //End of clock init.
     
     initPins();
     
     Uart2Init(115200L, InterruptRoutine);
-//    TRISAbits.TRISA4 = 0;
-//    LATAbits.LATA4 = 0;
-//    while(1) {
-//        LATAbits.LATA4 = SD_IN;
-//    }
 
 //    Uart2PrintChar('S');
     while (!SD_IN);
     
     // initialize the file system, open the file, read the file and send in chunks
     FSInit();
-    FSFILE * newFile = FSfopen("testfile.txt", FS_WRITE);
-    char text[] = "If this prints over the UART, then file writing and reading both work.";
-    FSfwrite(text, 1, sizeof (text), newFile);
-    FSfclose(newFile);
 
-    FSFILE * openFile = FSfopen("testfile.txt", FS_READ);
+    FSFILE * openFile = FSfopen("send.txt", FS_READ);
 
     char toSend[512];
     int n;

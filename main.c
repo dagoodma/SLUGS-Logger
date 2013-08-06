@@ -22,12 +22,17 @@
 #define CB_SIZE (UART2_BUFFER_SIZE * 30)
 #define SD_IN (!SD_CD)
 
-// Initial setup for the clock
+/*
+ * Pic shadow register pragmas.  These set main oscillator sources, and
+ * other low-level hardware stuff like PGD/PGC (debug/programming) pin positions.
+*/
+#ifdef _FSS       /* for chip with memory protection options */
+_FSS( RSS_NO_RAM & SSS_NO_FLASH & SWRP_WRPROTECT_OFF )
+#endif
 _FOSCSEL(FNOSC_FRC & PWMLOCK_OFF);
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
 _FWDT(FWDTEN_OFF);
 _FICD(JTAGEN_OFF & ICS_PGD2);
-// Inital setup for the clock
 
 void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize);
 void Timer2InterruptRoutine(void);
@@ -51,21 +56,25 @@ uint32_t failedWrites;
 int main(void)
 {
     //Clock init  M=43, N1,2 = 2 == 39.61MIPS
-	PLLFBD = 43;
-	CLKDIVbits.PLLPOST = 0; // N1 = 2
-	CLKDIVbits.PLLPRE = 0; // N2 = 2
-	OSCTUN = 0;
-	RCONbits.SWDTEN = 0;
+    PLLFBD = 43;
+    CLKDIVbits.PLLPOST = 0; // N1 = 2
+    CLKDIVbits.PLLPRE = 0; // N2 = 2
+    OSCTUN = 0;
+    RCONbits.SWDTEN = 0;
 
-	__builtin_write_OSCCONH(0x01); // Initiate Clock Switch to Primary (3?)
+    __builtin_write_OSCCONH(0x01); // Initiate Clock Switch to Primary (3?)
 
-	__builtin_write_OSCCONL(0x01); // Start clock switching
+    __builtin_write_OSCCONL(0x01); // Start clock switching
 
-	while (OSCCONbits.COSC != 0b001); // Wait for Clock switch to occur
+    while (OSCCONbits.COSC != 0b001); // Wait for Clock switch to occur
 
-	while (OSCCONbits.LOCK != 1) {
-	};
-	//End of clock init.
+    while (OSCCONbits.LOCK != 1) {
+    };
+    //End of clock init.
+
+    // turn on amber LED
+    TRISAbits.TRISA4 = 0;
+    LATAbits.LATA4 = 1;
     
     initPins();
 
@@ -73,6 +82,7 @@ int main(void)
 
     DataEEInit();
     Uart2Init(NewSDInit(), Uart2InterruptRoutine);
+    Uart2PrintChar('N');
 
     timeStamp = 0;
 
@@ -83,13 +93,12 @@ int main(void)
     int SDConnected = 0;
     maxBuffer = 0;
     latestMaxBuffer = 0;
-    Uart2PrintChar('N');
 
     unsigned int eetest = DataEERead(1);
     if (eetest != 0xFFFF) {
         Uart2PrintChar(eetest);
     }
-    
+    while(1);
     while(1)
     {
         if (SD_IN)
