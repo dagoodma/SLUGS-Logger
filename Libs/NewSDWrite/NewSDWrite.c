@@ -89,7 +89,7 @@ long int NewSDInit(void)
 
     // Read EEPROM to find next file name
     while(1) {
-        fileNumber = DataEERead(EE_ADDRESS);
+        fileNumber = 1; // DataEERead(EE_ADDRESS); 
         if (fileNumber != 0xFFFF) {
             break;
         }

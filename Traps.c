@@ -23,6 +23,15 @@ void __attribute__((interrupt, no_auto_psv)) _AddressError(void)
     LATAbits.LATA1 = 1;
     FATAL_ERROR();
 }
+
+void __attribute__((interrupt, no_auto_psv)) _HardTrapError(void)
+{
+//	INTCON1bits. = 0;
+	TRISAbits.TRISA1 = 0;
+    LATAbits.LATA1 = 1;
+    FATAL_ERROR();
+}
+
 void __attribute__((interrupt, no_auto_psv)) _StackError(void)
 {
 	INTCON1bits.STKERR = 0;
@@ -41,4 +50,12 @@ void __attribute__((interrupt, no_auto_psv)) _DMACError(void)
 {
 	INTCON1bits.DMACERR = 0;
 	FATAL_ERROR();
+}
+
+void __attribute__((interrupt, no_auto_psv)) _SoftTrapError(void)
+{
+	INTCON1bits.ADDRERR = 0;
+	TRISAbits.TRISA1 = 0;
+    LATAbits.LATA1 = 1;
+    FATAL_ERROR();
 }

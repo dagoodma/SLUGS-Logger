@@ -15,7 +15,6 @@
       <itemPath>../Libs/Timer2/Timer2.h</itemPath>
       <itemPath>../Libs/Uart1/Uart1.h</itemPath>
       <itemPath>../Libs/Uart2/Uart2.h</itemPath>
-      <itemPath>../Startup.h</itemPath>
       <itemPath>../Libs/DEE/DEE Emulation 16-bit.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"

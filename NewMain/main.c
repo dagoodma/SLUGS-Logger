@@ -1,8 +1,8 @@
 /* 
  * File:   main.c
- * Author: Jesse
+ * Author: jesseharkin
  *
- * Created on February 12, 2013, 11:17 AM
+ * Created on March 14, 2013, 3:50 PM
  */
 #include <stdint.h>
 #include "CircularBuffer.h"
@@ -53,7 +53,7 @@ uint32_t failedWrites;
 /*
  * 
  */
-int main(void)
+int main()
 {
     //Clock init  M=43, N1,2 = 2 == 39.61MIPS
     PLLFBD = 43;
@@ -71,16 +71,20 @@ int main(void)
     while (OSCCONbits.LOCK != 1) {
     };
     //End of clock init.
+    
+    // turn on amber LED
+    TRISAbits.TRISA4 = 0;
+    LATAbits.LATA4 = 1;
+
+    initPins();
+    while (!SD_IN);
+
+//    DataEEInit();
 
     // turn on amber LED
     TRISAbits.TRISA4 = 0;
     LATAbits.LATA4 = 1;
     
-    initPins();
-
-    while (!SD_IN);
-
-    DataEEInit();
     Uart2Init(NewSDInit(), Uart2InterruptRoutine);
     Uart2PrintChar('N');
 
@@ -89,7 +93,7 @@ int main(void)
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) {
         FATAL_ERROR();
     }
-    
+
     int SDConnected = 0;
     maxBuffer = 0;
     latestMaxBuffer = 0;
@@ -98,9 +102,8 @@ int main(void)
     if (eetest != 0xFFFF) {
         Uart2PrintChar(eetest);
     }
-    while(1);
+//    while(1);
     while(1)
-                    dsk->maxcls = DataSec / dsk->SecPerClus;
     {
         if (SD_IN)
         {
@@ -112,10 +115,9 @@ int main(void)
                 } while(Minfo->errorCode == MEDIA_CANNOT_INITIALIZE);
                 SDConnected = 1;
             }
-                    dsk->maxcls = DataSec / dsk->SecPerClus;
             // When we are connected and initialized, poll the buffer, if there
             // is data, write it.
-            
+
             tempSector.sectorFormat.maxBuffer = maxBuffer/505;
             if (CB_PeekMany(&circBuf, tempSector.sectorFormat.data, UART2_BUFFER_SIZE)){
                 if(NewSDWriteSector(&tempSector)){
@@ -130,13 +132,16 @@ int main(void)
     }
 }
 
-void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
+// calculates a basic byte Xor checksum of some data
+
+char checksum(char * data, int dataSize)
 {
-    if (Buffer[0] == '\0') { // NOT FOR FINAL CODE
-        Buffer[0] = '0';
+    char sum = 0;
+    int i;
+    for (i = 0; i < dataSize; i++) {
+        sum ^= data[i];
     }
-    CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
-    if(circBuf.dataSize >= maxBuffer) maxBuffer = circBuf.dataSize;
+    return sum;
 }
 
 /**
@@ -153,7 +158,7 @@ void initPins(void)
     // To enable UART2 pins: TX on 11, RX on 13
     PPSOutput(OUT_FN_PPS_U2TX, OUT_PIN_PPS_RP43);
     PPSInput(PPS_U2RX, PPS_RPI45);
-
+    
     // enable the SPI stuff: clock, in, out
     PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
     PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
@@ -163,4 +168,13 @@ void initPins(void)
     // Disable A/D functions on pins
     ANSELA = 0;
     ANSELB = 0;
+}
+
+void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
+{
+    if (Buffer[0] == '\0') { // NOT FOR FINAL CODE
+        Buffer[0] = '0';
+    }
+    CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
+    if(circBuf.dataSize >= maxBuffer) maxBuffer = circBuf.dataSize;
 }
