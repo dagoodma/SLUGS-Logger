@@ -43,9 +43,9 @@ void Uart2Init(long int baudRate, void (*Callback)(unsigned char *, int))
 
 	DMA0PAD = (volatile unsigned int) &U2RXREG;
 	DMA0STAL = (unsigned int)&BufferA;
-    DMA0STAH = (unsigned int)&BufferA;
+        DMA0STAH = (unsigned int)&BufferA;
 	DMA0STBL = (unsigned int)&BufferB;
-    DMA0STBH = (unsigned int)&BufferB;
+        DMA0STBH = (unsigned int)&BufferB;
 
 	IFS0bits.DMA0IF = 0;
 	IEC0bits.DMA0IE = 1; // Enable DMA interrupt

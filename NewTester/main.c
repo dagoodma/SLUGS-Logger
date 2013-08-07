@@ -82,6 +82,9 @@ int main()
 
 void InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
+    int i;
+    i = 10;
+    i = i + 1;
 }
 
 // calculates a basic byte Xor checksum of some data

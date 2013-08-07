@@ -18,16 +18,16 @@ void __attribute__((interrupt, no_auto_psv)) _OscillatorFail(void)
 
 void __attribute__((interrupt, no_auto_psv)) _AddressError(void)
 {
-	INTCON1bits.ADDRERR = 0;
-	TRISAbits.TRISA1 = 0;
+    INTCON1bits.ADDRERR = 0;
+    TRISAbits.TRISA1 = 0;
     LATAbits.LATA1 = 1;
     FATAL_ERROR();
 }
 
 void __attribute__((interrupt, no_auto_psv)) _HardTrapError(void)
 {
-//	INTCON1bits. = 0;
-	TRISAbits.TRISA1 = 0;
+//  INTCON1bits. = 0;
+    TRISAbits.TRISA1 = 0;
     LATAbits.LATA1 = 1;
     FATAL_ERROR();
 }
@@ -54,8 +54,8 @@ void __attribute__((interrupt, no_auto_psv)) _DMACError(void)
 
 void __attribute__((interrupt, no_auto_psv)) _SoftTrapError(void)
 {
-	INTCON1bits.ADDRERR = 0;
-	TRISAbits.TRISA1 = 0;
+//	INTCON1bits.ADDRERR = 0;
+    TRISAbits.TRISA1 = 0;
     LATAbits.LATA1 = 1;
     FATAL_ERROR();
 }
