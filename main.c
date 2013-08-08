@@ -19,7 +19,7 @@
 #include "DEE Emulation 16-bit.h"
 
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
-#define CB_SIZE (UART2_BUFFER_SIZE * 30)
+#define CB_SIZE (UART2_BUFFER_SIZE * 1)
 #define SD_IN (!SD_CD)
 
 /*
