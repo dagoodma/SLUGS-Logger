@@ -49,7 +49,7 @@ typedef struct {
 	uint16_t staticSize;   //!< Stores the static size of the buffer. The actual number of data bytes stored can be retrieved by CB_LENGTH() or CB_GetLength().
 	uint16_t dataSize;     //!< The actual number of unread bytes in the buffer.
 	uint8_t overflowCount; //!< Tracks how many bytes have been attempted to be written while the buffer was full.
-	uint8_t *data;         //!< A pointer to the actual data managed by this buffer.
+	__eds__ uint8_t *data;         //!< A pointer to the actual data managed by this buffer.
 } CircularBuffer;
 
 /**
@@ -66,7 +66,7 @@ typedef struct {
  * @param data A pointer to where the data will be stored.
  * @param size The length of the buffer.
  */
-int CB_Init(CircularBuffer *b, uint8_t *data, const uint16_t size);
+int CB_Init(CircularBuffer *b, __eds__ uint8_t *data, const uint16_t size);
 
 /**
  * @brief CB_ReadByte() reads a byte from the buffer.

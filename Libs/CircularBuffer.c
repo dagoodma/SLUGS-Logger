@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int CB_Init(CircularBuffer *b, uint8_t *buffer, const uint16_t size)
+int CB_Init(CircularBuffer *b, __eds__ uint8_t *buffer, const uint16_t size)
 {
 	// Check the validity of pointers.
 	if (!buffer || !b) {

@@ -57,7 +57,7 @@ void Uart1Init(uint16_t brgRegister)
 
     // Enable the port;
     U1MODEbits.UARTEN	= 1;		// Enable the port
-    U1STAbits.UTXEN		= 1;		// Enable TX
+    U1STAbits.UTXEN	= 1;		// Enable TX
 
 }
 

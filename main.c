@@ -10,7 +10,6 @@
 #include <pps.h>
 // The UartX.h files need to be included before stddef.h
 #include "Uart2.h"
-#include "Uart1.h"
 #include <stddef.h>
 #include "Libs/Microchip/Include/MDD File System/FSIO.h"
 #include "NewSDWrite.h"
@@ -19,7 +18,7 @@
 #include "DEE Emulation 16-bit.h"
 
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
-#define CB_SIZE (UART2_BUFFER_SIZE * 1)
+#define CB_SIZE (UART2_BUFFER_SIZE * 40)
 #define SD_IN (!SD_CD)
 
 /*
@@ -40,7 +39,7 @@ void setLeds(char input);
 void initPins(void);
 
 CircularBuffer circBuf;
-unsigned char cbData[CB_SIZE];
+__eds__ unsigned char cbData[CB_SIZE];
 Sector tempSector;
 
 
