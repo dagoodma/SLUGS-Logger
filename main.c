@@ -18,7 +18,7 @@
 #include "DEE Emulation 16-bit.h"
 
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
-#define CB_SIZE (UART2_BUFFER_SIZE * 40)
+#define CB_SIZE (UART2_BUFFER_SIZE * 2)
 #define SD_IN (!SD_CD)
 
 /*
@@ -39,7 +39,7 @@ void setLeds(char input);
 void initPins(void);
 
 CircularBuffer circBuf;
-__eds__ unsigned char cbData[CB_SIZE];
+__eds__ unsigned char __attribute__((eds,space(eds))) cbData[CB_SIZE];
 Sector tempSector;
 
 
