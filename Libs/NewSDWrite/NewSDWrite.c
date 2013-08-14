@@ -78,12 +78,12 @@ long int NewSDInit(void)
 
     // Open then read the config file, null terminate the config text string
     while (configFile == NULL) configFile = FSfopen("CONFIG.TXT", FS_READPLUS); // open the file
-    FSfread((char * __eds__) configText, 1, CONFIG_READ_SIZE, configFile);
+    FSfread(configText, 1, CONFIG_READ_SIZE, configFile);
     FSrewind(configFile);
     configText[CONFIG_READ_SIZE] = '\0';
 
     // extract config info
-    if (sscanf((char * __eds__)configText, "BAUD %ld", &baudRate) < 1) {
+    if (sscanf(configText, "BAUD %ld", &baudRate) < 1) {
         FATAL_ERROR(); // TODO have default config file? maybe not
     }
 
