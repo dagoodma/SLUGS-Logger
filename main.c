@@ -81,8 +81,8 @@ int main()
 //    DataEEInit();
 
     Uart2Init(NewSDInit(), Uart2InterruptRoutine);
-    Uart2PrintChar('N');
-
+    Uart2PrintChar('S');
+    
     timeStamp = 0;
 
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) {
@@ -118,6 +118,7 @@ int main()
                 if(NewSDWriteSector(&tempSector)){
                     // Remove the data we just written.
                     CB_Remove(&circBuf, UART2_BUFFER_SIZE);
+                    Uart2PrintChar('@');
 //                    maxBuffer = 0; // reset the buffer count for the next time we send
                 } else failedWrites++;
             }
@@ -167,9 +168,7 @@ void initPins(void)
 
 void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
-    if (Buffer[0] == '\0') { // NOT FOR FINAL CODE
-        Buffer[0] = '0';
-    }
     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
     if(circBuf.dataSize >= maxBuffer) maxBuffer = circBuf.dataSize;
+    Uart2PrintChar(' ');
 }
