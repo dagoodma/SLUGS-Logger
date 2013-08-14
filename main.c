@@ -18,7 +18,7 @@
 #include "DEE Emulation 16-bit.h"
 
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
-#define CB_SIZE (UART2_BUFFER_SIZE * 2)
+#define CB_SIZE (UART2_BUFFER_SIZE * 20)
 #define SD_IN (!SD_CD)
 
 /*
@@ -79,10 +79,6 @@ int main()
     while (!SD_IN);
 
 //    DataEEInit();
-
-    // turn on amber LED
-    TRISAbits.TRISA4 = 0;
-    LATAbits.LATA4 = 1;
 
     Uart2Init(NewSDInit(), Uart2InterruptRoutine);
     Uart2PrintChar('N');
