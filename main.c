@@ -81,12 +81,6 @@ int main()
     }
 
     initPins();
-    
-    int testInt;
-    unsigned char testUChar = 0x40;
-    int testInt2 = 0x40;
-    testInt = (unsigned long)0x26 / testInt2; // 0x26302630
-
 
     // turn on amber LED
     TRISAbits.TRISA4 = 0;

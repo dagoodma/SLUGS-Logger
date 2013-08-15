@@ -42,10 +42,10 @@
 * Priyabrata Sinha  2012/04/19  Version 2.2.0 - Removed absolute path
 ************************************************************************/
 // User defined constants
-#define DATA_EE_BANKS       2
-#define DATA_EE_SIZE        255
+#define DATA_EE_BANKS       1
+#define DATA_EE_SIZE        2
 #define DATA_EE_TOTAL_SIZE  (DATA_EE_BANKS * DATA_EE_SIZE)
-#define NUM_DATA_EE_PAGES   3
+#define NUM_DATA_EE_PAGES   2
 #if defined(__dsPIC33E__) || defined(__PIC24E__)
 #define ERASE               0x4003
 #define PROGRAM_ROW         0x4002
