@@ -75,10 +75,24 @@ int main()
     TRISAbits.TRISA4 = 0;
     LATAbits.LATA4 = 1;
 
-    initPins();
-    while (!SD_IN);
+    if (DataEEInit()) { // must be called prior to any other operation
+        // DataEEInit failed
+        FATAL_ERROR();
+    }
 
-//    DataEEInit();
+    initPins();
+    
+    int testInt;
+    unsigned char testUChar = 0x40;
+    int testInt2 = 0x40;
+    testInt = (unsigned long)0x26 / testInt2; // 0x26302630
+
+
+    // turn on amber LED
+    TRISAbits.TRISA4 = 0;
+    LATAbits.LATA4 = 1;
+
+    while (!SD_IN);
 
     Uart2Init(NewSDInit(), Uart2InterruptRoutine);
     Uart2PrintChar('S');
@@ -97,7 +111,7 @@ int main()
     if (eetest != 0xFFFF) {
         Uart2PrintChar(eetest);
     }
-//    while(1);
+    
     while(1)
     {
         if (SD_IN)

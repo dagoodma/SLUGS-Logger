@@ -1850,7 +1850,7 @@ BYTE LoadBootSector(DISK *dsk)
                     dsk->maxcls = DataSec / dsk->SecPerClus;
     
                     #else // PIC24/30/33
-    
+
                     // Read the count of reserved sectors
                     ReservedSectorCount = ReadWord( dsk->buffer, BSI_RESRVSEC );
                     // Load the count of sectors per cluster

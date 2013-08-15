@@ -120,6 +120,7 @@ unsigned char emulationPages[DATA_EE_BANKS * NUM_DATA_EE_PAGES][NUMBER_OF_INSTRU
 #define DEE_PAGE_SIZE (sizeof(emulationPages[0]))
 
 #if __C30_VERSION__ > 301
+    #warning "Whatevs"
     #define DEE_PAGE_TBL(bank, page) ((__builtin_tbladdress(&emulationPages) + (DEE_BANK_SIZE * (bank)) + (DEE_PAGE_SIZE * (page))) >> 16)
     #define DEE_PAGE_OFFSET(bank, page) ((__builtin_tbladdress(&emulationPages) + (DEE_BANK_SIZE * (bank)) + (DEE_PAGE_SIZE * (page))) & 0xFFFF)
 #else
@@ -552,50 +553,50 @@ unsigned char DataEEInit(void)
             TBLPAG = savedTBLPAG;
             continue;
         }
-        //If one active page, do nothing
-        else if(pageCnt == 1)
-        {
-            TBLPAG = savedTBLPAG;
-            continue;
-        }
-        //If two active pages, erase second and repack first
-        else if(pageCnt == 2)
-        {
-            if((GetPageStatus(bank, NUM_DATA_EE_PAGES - 1, STATUS_CURRENT) == PAGE_CURRENT) &&
-                (GetPageStatus(bank, 0, STATUS_CURRENT) == PAGE_CURRENT))
-            {
-                currentPage = NUM_DATA_EE_PAGES - 1;
-                erasePage = 0;
-            }
-            else
-            {
-                currentPage = 0;
-                while((GetPageStatus(bank, currentPage, STATUS_CURRENT) == PAGE_NOT_CURRENT) &&
-                    (currentPage < NUM_DATA_EE_PAGES))
-                {
-                    currentPage++;
-                }
-                erasePage = currentPage + 1;
-                if (erasePage == NUM_DATA_EE_PAGES)
-                {
-                    erasePage = 0;
-                }
-            }
-            ErasePage(bank, erasePage);
-
-            if(!GetNextAvailCount(bank))
-            {
-                PackEE(bank);
-            }
-            TBLPAG = savedTBLPAG;
-            continue;
-        }
-        else
-        {
-            TBLPAG = savedTBLPAG;
-            SetPageCorruptStatus(1);
-            return(6);
-        }
+//        //If one active page, do nothing
+//        else if(pageCnt == 1)
+//        {
+//            TBLPAG = savedTBLPAG;
+//            continue;
+//        }
+//        //If two active pages, erase second and repack first
+//        else if(pageCnt == 2)
+//        {
+//            if((GetPageStatus(bank, NUM_DATA_EE_PAGES - 1, STATUS_CURRENT) == PAGE_CURRENT) &&
+//                (GetPageStatus(bank, 0, STATUS_CURRENT) == PAGE_CURRENT))
+//            {
+//                currentPage = NUM_DATA_EE_PAGES - 1;
+//                erasePage = 0;
+//            }
+//            else
+//            {
+//                currentPage = 0;
+//                while((GetPageStatus(bank, currentPage, STATUS_CURRENT) == PAGE_NOT_CURRENT) &&
+//                    (currentPage < NUM_DATA_EE_PAGES))
+//                {
+//                    currentPage++;
+//                }
+//                erasePage = currentPage + 1;
+//                if (erasePage == NUM_DATA_EE_PAGES)
+//                {
+//                    erasePage = 0;
+//                }
+//            }
+//            ErasePage(bank, erasePage);
+//
+//            if(!GetNextAvailCount(bank))
+//            {
+//                PackEE(bank);
+//            }
+//            TBLPAG = savedTBLPAG;
+//            continue;
+//        }
+//        else
+//        {
+//            TBLPAG = savedTBLPAG;
+//            SetPageCorruptStatus(1);
+//            return(6);
+//        }
     }
     return(0);
 }
