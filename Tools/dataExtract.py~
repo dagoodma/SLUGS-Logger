@@ -13,7 +13,6 @@ if len(sys.argv) < 3 :
     
 header_len = 4
 num_pos = 2
-maxBuf_pos = 3
 check_pos = -3
 footer_len = 3
     # Open files
@@ -24,7 +23,6 @@ rawLog = open(sys.argv[2], "wb") # open the second file for binary writing
 nextSector = slog.read(512)
 fileNumber = nextSector[num_pos]
 sectorNumber = 0
-maxBuf = 0
 while nextSector:
         #process the sector
     #verify header & footer tags
@@ -41,9 +39,6 @@ while nextSector:
     if nextSector[check_pos] != checkSum(nextSector[header_len:-footer_len]):
         print("Checksum Failed at sector " + str(sectorNumber))
         exit()
-    #copy failed writes
-    if nextSector[maxBuf_pos] > maxBuf :
-        failedWrite = nextSector[failed_pos]
     rawLog.write(nextSector[header_len:-footer_len])
     sectorNumber += 1
     nextSector = slog.read(512)

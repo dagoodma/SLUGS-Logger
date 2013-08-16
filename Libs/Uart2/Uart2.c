@@ -1,4 +1,5 @@
 #include <xc.h>
+#include "NewSDWrite.h"
 #include "Uart2.h"
 #include <string.h>
 
@@ -24,7 +25,7 @@ void Uart2Init(long int baudRate, void (*Callback)(unsigned char *, int))
 	U2MODEbits.PDSEL = 0; // No Parity, 8-data bits
 	U2MODEbits.ABAUD = 0; // Auto-Baud Disabled
 
-	U2BRG = 21; //((unsigned long)FCY / baudRate / 16) - 1; // Buad rate;
+	U2BRG = 21; //((unsigned long)FCY / baudRate / 16) - 1; // TODO: fix this
 
 	U2STAbits.UTXISEL0 = 0; // Interrupt after one Tx character is transmitted
 	U2STAbits.UTXISEL1 = 0;

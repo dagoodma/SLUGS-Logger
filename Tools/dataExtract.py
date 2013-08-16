@@ -11,9 +11,8 @@ if len(sys.argv) < 3 :
     print("This script requires 2 arguments: a logger file to extract from and a file to dump extracted data. WARNING: The second file will be overwritten!")
     exit()
     
-header_len = 4
+header_len = 3
 num_pos = 2
-maxBuf_pos = 3
 check_pos = -3
 footer_len = 3
     # Open files
@@ -24,32 +23,23 @@ rawLog = open(sys.argv[2], "wb") # open the second file for binary writing
 nextSector = slog.read(512)
 fileNumber = nextSector[num_pos]
 sectorNumber = 0
-maxBuf = 0
 while nextSector:
         #process the sector
     #verify header & footer tags
     if nextSector[:2] != b'%^' :
         print("Header Tag Failed at sector " + str(sectorNumber))
-        print("Max Buffer: " + str(maxBuf))
         exit()
     if nextSector[-2:] != b'%$' :
         print("Footer Tag Failed at sector " + str(sectorNumber))
-        print("Max Buffer: " + str(maxBuf))
     #verify header number
     if nextSector[num_pos] != fileNumber :
         print("Number Failed at sector " + str(sectorNumber))
-        print("Max Buffer: " + str(maxBuf))
         exit()
     #verify footer checksum
     if nextSector[check_pos] != checkSum(nextSector[header_len:-footer_len]):
         print("Checksum Failed at sector " + str(sectorNumber))
-        print("Max Buffer: " + str(maxBuf))
         exit()
-    #copy failed writes
-    if nextSector[maxBuf_pos] > maxBuf :
-        maxBuf = nextSector[maxBuf_pos]
     rawLog.write(nextSector[header_len:-footer_len])
     sectorNumber += 1
     nextSector = slog.read(512)
 print("Success.")
-print("Max Buffer: " + str(maxBuf))

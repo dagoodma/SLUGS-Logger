@@ -491,7 +491,7 @@
             #define SD_CS_ANSEL		0   //ANSELBbits.ANSB9
             
             // Description: SD-SPI Card Detect Input bit
-            #define SD_CD               !PORTAbits.RA0
+            #define SD_CD               PORTAbits.RA0
             // Description: SD-SPI Card Detect TRIS bit
             #define SD_CD_TRIS          TRISAbits.TRISA0
 

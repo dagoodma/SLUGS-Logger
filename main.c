@@ -8,14 +8,15 @@
 #include "CircularBuffer.h"
 #include <xc.h>
 #include <pps.h>
+#include "NewSDWrite.h"
 // The UartX.h files need to be included before stddef.h
 #include "Uart2.h"
 #include <stddef.h>
 #include "Libs/Microchip/Include/MDD File System/FSIO.h"
-#include "NewSDWrite.h"
 #include "Node.h"
 #include "Timer2.h"
 #include "DEE Emulation 16-bit.h"
+#include <stdio.h>
 
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
 #define CB_SIZE (UART2_BUFFER_SIZE * 20)
@@ -41,17 +42,15 @@ void initPins(void);
 CircularBuffer circBuf;
 __eds__ unsigned char __attribute__((eds,space(eds))) cbData[CB_SIZE];
 Sector tempSector;
+int sdConnected;
 
+// Debug variables
+uint16_t maxCbGlobal;
+uint16_t writeFailes;
+uint16_t cbSize;
+int cbFilling;
+char string[15];
 
-// for diagnostics
-uint32_t timeStamp;
-uint32_t maxBuffer;
-uint32_t latestMaxBuffer;
-uint32_t failedWrites;
-
-/*
- *
- */
 int main()
 {
     //Clock init  M=43, N1,2 = 2 == 39.61MIPS
@@ -71,10 +70,6 @@ int main()
     };
     //End of clock init.
 
-    // turn on amber LED
-    TRISAbits.TRISA4 = 0;
-    LATAbits.LATA4 = 1;
-
     if (DataEEInit()) { // must be called prior to any other operation
         // DataEEInit failed
         FATAL_ERROR();
@@ -82,56 +77,51 @@ int main()
 
     initPins();
 
+    while (!SD_IN);
+    sdConnected = 1;
+
     // turn on amber LED
     TRISAbits.TRISA4 = 0;
     LATAbits.LATA4 = 1;
-
-    while (!SD_IN);
-
+    
     Uart2Init(NewSDInit(), Uart2InterruptRoutine);
     Uart2PrintChar('S');
     
-    timeStamp = 0;
-
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) {
         FATAL_ERROR();
-    }
-
-    int SDConnected = 0;
-    maxBuffer = 0;
-    latestMaxBuffer = 0;
-
-    unsigned int eetest = DataEERead(1);
-    if (eetest != 0xFFFF) {
-        Uart2PrintChar(eetest);
     }
     
     while(1)
     {
         if (SD_IN)
         {
-            // if the board was just plugged in try to reinitialize
-            if(!SDConnected) {
+            // if the card was just plugged in try to reinitialize
+            if(!sdConnected) {
                MEDIA_INFORMATION * Minfo;
                 do {
                     Minfo = MDD_MediaInitialize();
                 } while(Minfo->errorCode == MEDIA_CANNOT_INITIALIZE);
-                SDConnected = 1;
+                sdConnected = 1;
             }
             // When we are connected and initialized, poll the buffer, if there
             // is data, write it.
-
-            tempSector.sectorFormat.maxBuffer = maxBuffer/505;
             if (CB_PeekMany(&circBuf, tempSector.sectorFormat.data, UART2_BUFFER_SIZE)){
                 if(NewSDWriteSector(&tempSector)){
                     // Remove the data we just written.
                     CB_Remove(&circBuf, UART2_BUFFER_SIZE);
-                    Uart2PrintChar('@');
-//                    maxBuffer = 0; // reset the buffer count for the next time we send
-                } else failedWrites++;
+
+                    // Debug: just after writing
+                    if (cbSize >= 2 && cbFilling) {
+                        //print buffer size
+                        sprintf(string, "%d ", cbSize);
+                        Uart2PrintStr(string);
+                    }
+                    cbFilling = 0;
+                    cbSize -= 1;
+                }
             }
         } else {
-            SDConnected = 0;
+            sdConnected = 0;
         }
     }
 }
@@ -177,6 +167,9 @@ void initPins(void)
 void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
     CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
-    if(circBuf.dataSize >= maxBuffer) maxBuffer = circBuf.dataSize;
-    Uart2PrintChar(' ');
+
+    // Debug: just after recieving
+    cbSize += 1;
+    if (cbSize > maxCbGlobal) { maxCbGlobal = cbSize; }
+    cbFilling = 1;
 }

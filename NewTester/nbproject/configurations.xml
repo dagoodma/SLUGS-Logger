@@ -56,7 +56,8 @@
       <compileType>
         <linkerTool>
           <linkerLibItems>
-            <linkerLibFileItem>../Libs/DEE/Flash Operations.s</linkerLibFileItem>
+            <linkerLibFileItem>../Libs/DEE/Flash Operations 33E_24E.s</linkerLibFileItem>
+            <linkerLibFileItem>../stack.S</linkerLibFileItem>
           </linkerLibItems>
         </linkerTool>
         <loading>
