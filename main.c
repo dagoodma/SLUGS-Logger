@@ -118,6 +118,8 @@ int main()
                     }
                     cbFilling = 0;
                     cbSize -= 1;
+                } else { // write failed
+                    Uart2PrintStr("WF ");
                 }
             }
         } else {
