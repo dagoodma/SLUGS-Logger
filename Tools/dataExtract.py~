@@ -1,3 +1,8 @@
+"""
+This script will copy a log file to a new file, removing headers and footers along the way.
+Run in command line: "python3 dataExtract.py [log file] [desination file]"
+Example: "python3 dataExtract.py 0001.txt Log21Aug.txt"
+"""
 import sys
 
 # a basic checksum function
@@ -11,7 +16,7 @@ if len(sys.argv) < 3 :
     print("This script requires 2 arguments: a logger file to extract from and a file to dump extracted data. WARNING: The second file will be overwritten!")
     exit()
     
-header_len = 4
+header_len = 3
 num_pos = 2
 check_pos = -3
 footer_len = 3

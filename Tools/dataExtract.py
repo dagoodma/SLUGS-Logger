@@ -1,3 +1,9 @@
+"""
+This script will copy a log file to a new file, removing headers and footers along the way.
+Run in command line: "python3 dataExtract.py [log file] [desination file]"
+Example: "python3 dataExtract.py 0001.txt Log21Aug.txt"
+"""
+
 import sys
 
 # a basic checksum function

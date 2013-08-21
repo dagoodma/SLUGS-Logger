@@ -14,12 +14,11 @@
 #include "DEE Emulation 16-bit.h"
 
 #define CONFIG_READ_SIZE 50
-#define MAX_PREFIX "5"
-#define MAX_SUFFIX "3"
 #define EIGHT_THREE_LEN (8 + 1 + 3 + 1)
 #define MULTIPLE_CLUSTERS 0x04
 
 // Directory entry structure
+
 typedef struct {
     char DIR_Name[DIR_NAMESIZE]; // File name
     char DIR_Extension[DIR_EXTENSION]; // File extension
@@ -45,6 +44,7 @@ DWORD WriteFAT(DISK *dsk, DWORD ccls, DWORD value, BYTE forceWrite);
 BYTE Write_File_Entry(FILEOBJ fo, WORD * curEntry);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
+
 int utf16toStr(unsigned short int * origin, char * result, int number);
 uint8_t Checksum(uint8_t * data, int dataSize);
 int NewAllocateMultiple(FSFILE * fo);
@@ -69,7 +69,7 @@ long int NewSDInit(void)
 
     // extracted from the config
     long int baudRate;
-    
+
     // the final file name
     char fileName[EIGHT_THREE_LEN] = {};
 
@@ -88,19 +88,19 @@ long int NewSDInit(void)
     }
 
     // Read EEPROM to find next file name
-    while(1) {
-        fileNumber = DataEERead(EE_ADDRESS); 
+    while (1) {
+        fileNumber = DataEERead(EE_ADDRESS);
         if (fileNumber != 0xFFFF) {
             break;
         }
         DataEEWrite(0x00, EE_ADDRESS);
     }
-    // !! CORRECT THE LAST FILE SIZE HERE
+    // TODO CORRECT THE LAST FILE SIZE HERE
     DataEEWrite(++fileNumber, EE_ADDRESS);
 
     // Open a new file
     filePointer = NULL;
-    sprintf(fileName, "%04x.txt", fileNumber);
+    sprintf(fileName, "%04x.log", fileNumber);
     while (filePointer == NULL) filePointer = FSfopen(fileName, FS_WRITE);
 
     // Initialize data for NewSDWriteSector
@@ -108,7 +108,7 @@ long int NewSDInit(void)
 
     // allocate some clusters
     NewAllocateMultiple(filePointer);
-    
+
     return baudRate;
 }
 
@@ -125,17 +125,17 @@ long int NewSDInit(void)
 int NewSDWriteSector(Sector * sector)
 {
     DWORD CurrentSector = Cluster2Sector(filePointer->dsk, filePointer->ccls)
-        + filePointer->sec;
+            + filePointer->sec;
     DWORD SectorLimit = Cluster2Sector(filePointer->dsk, filePointer->ccls)
-        + filePointer->dsk->SecPerClus;
+            + filePointer->dsk->SecPerClus;
 
     // add header and footer
     sector->sectorFormat.headerTag = HEADER_TAG;
     sector->sectorFormat.number = fileNumber; // need to figure out how to number these
     sector->sectorFormat.checksum = Checksum(sector->sectorFormat.data,
-        sizeof(sector->sectorFormat.data));
+            sizeof (sector->sectorFormat.data));
     sector->sectorFormat.footerTag = FOOTER_TAG;
-    
+
     // Write the data
     int success = MDD_SDSPI_SectorWrite(CurrentSector, sector->raw, false);
     if (!success) {
@@ -146,7 +146,7 @@ int NewSDWriteSector(Sector * sector)
     // else, next sector
     if (CurrentSector == SectorLimit - 1) {
         // if this is the last cluster, allocate more
-        if(filePointer->ccls == lastCluster) {
+        if (filePointer->ccls == lastCluster) {
             if (!NewAllocateMultiple(filePointer)) {
                 return 0;
             }
@@ -164,7 +164,7 @@ int NewSDWriteSector(Sector * sector)
 
     // save off the seek
     filePointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
-    
+
     return 1;
 }
 
@@ -218,7 +218,7 @@ int NewFileUpdate(FSFILE * fo)
 
     // Write the file data
     WriteFAT(fo->dsk, 0, 0, TRUE);
-    
+
     // Update file entry data
     dir = LoadDirAttrib(fo, &fHandle);
     if (dir == NULL) {
@@ -228,9 +228,9 @@ int NewFileUpdate(FSFILE * fo)
     dir->DIR_Attr = fo->attributes;
     dir->DIR_FstClusHI = (fo->cluster & 0xFFFF0000) >> 16;
     dir->DIR_FstClusLO = fo->cluster & 0x0000FFFF;
-    
+
     Write_File_Entry(fo, &fHandle);
-    
+
     return 1;
 }
 

@@ -25,9 +25,9 @@
 /*
  * Pic shadow register pragmas.  These set main oscillator sources, and
  * other low-level hardware stuff like PGD/PGC (debug/programming) pin positions.
-*/
+ */
 #ifdef _FSS       /* for chip with memory protection options */
-_FSS( RSS_NO_RAM & SSS_NO_FLASH & SWRP_WRPROTECT_OFF )
+_FSS(RSS_NO_RAM & SSS_NO_FLASH & SWRP_WRPROTECT_OFF)
 #endif
 _FOSCSEL(FNOSC_FRC & PWMLOCK_OFF);
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_XT);
@@ -40,7 +40,7 @@ void setLeds(char input);
 void initPins(void);
 
 CircularBuffer circBuf;
-__eds__ unsigned char __attribute__((eds,space(eds))) cbData[CB_SIZE];
+__eds__ unsigned char __attribute__((eds, space(eds))) cbData[CB_SIZE];
 Sector tempSector;
 int sdConnected;
 
@@ -83,30 +83,28 @@ int main()
     // turn on amber LED
     TRISAbits.TRISA4 = 0;
     LATAbits.LATA4 = 1;
-    
+
     Uart2Init(NewSDInit(), Uart2InterruptRoutine);
     Uart2PrintChar('S');
-    
+
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) {
         FATAL_ERROR();
     }
-    
-    while(1)
-    {
-        if (SD_IN)
-        {
+
+    while (1) {
+        if (SD_IN) {
             // if the card was just plugged in try to reinitialize
-            if(!sdConnected) {
-               MEDIA_INFORMATION * Minfo;
+            if (!sdConnected) {
+                MEDIA_INFORMATION * Minfo;
                 do {
                     Minfo = MDD_MediaInitialize();
-                } while(Minfo->errorCode == MEDIA_CANNOT_INITIALIZE);
+                } while (Minfo->errorCode == MEDIA_CANNOT_INITIALIZE);
                 sdConnected = 1;
             }
             // When we are connected and initialized, poll the buffer, if there
             // is data, write it.
-            if (CB_PeekMany(&circBuf, tempSector.sectorFormat.data, UART2_BUFFER_SIZE)){
-                if(NewSDWriteSector(&tempSector)){
+            if (CB_PeekMany(&circBuf, tempSector.sectorFormat.data, UART2_BUFFER_SIZE)) {
+                if (NewSDWriteSector(&tempSector)) {
                     // Remove the data we just written.
                     CB_Remove(&circBuf, UART2_BUFFER_SIZE);
 
@@ -172,6 +170,8 @@ void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
 
     // Debug: just after recieving
     cbSize += 1;
-    if (cbSize > maxCbGlobal) { maxCbGlobal = cbSize; }
+    if (cbSize > maxCbGlobal) {
+        maxCbGlobal = cbSize;
+    }
     cbFilling = 1;
 }

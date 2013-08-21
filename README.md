@@ -8,9 +8,8 @@ See http://byron.soe.ucsc.edu/wiki/Slogger for more documentation.
 Put a valid "config.txt" file onto the target micro SD card. Insert the card and connect the Slogger to a serial input. A new file will be created on the card with a name like "0001.txt". (The number increases by one for every reset.) When logging is finished, use the "dataExract.py" tool to remove headers and footers from the data.
 
 ### Other Usage Notes ###
-> Send data to the device with 115200 baud UART
 
-> Put a valid "config.txt" file on the target SD card. See documentation for an example file. NOTE: The config file does not set the baudrate of the device, but a valid config file with BAUD [number] tag is still required.
+> Put a valid "config.txt" file on the target SD card. See documentation for an example file. NOTE: The Slogger has only been tested with 115200 baud UART.
 
 > Inserting an SD card might cause the device to reset.
 

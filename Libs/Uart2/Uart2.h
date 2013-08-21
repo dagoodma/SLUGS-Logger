@@ -13,7 +13,7 @@
 #endif
 
 #ifndef FCY
-#define FCY 40000000UL // assumes 80Mhz freq (FCY / 2)
+#define FCY 40000000UL // assumes 80Mhz freq (FCY * 2)
 #endif
 
 void Uart2Init(long int, void (*Callback)(unsigned char *, int)); // initializes UART and DMA to a ping-pong buffer
