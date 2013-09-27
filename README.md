@@ -18,3 +18,12 @@ Put a valid "config.txt" file onto the target micro SD card. Insert the card and
 > Data is recorded in chunks of 506 bytes. It is possible for the last 505 bytes of data to be lost.
 
 > __IMPORTANT:__ This project is still in development. Chunks of data might be lost. Please take note of any issues, and send them to the developer: Jesse Harkin (jdharkin@ucsc.edu).
+
+## Code ##
+### Overview ###
+![](/docs/images/slogger_data_flow.png "Slogger Data Flow")
+#### DMA
+The DMA peripheral receives incoming serial data from the UART peripheral, puts it into two ping-pong buffers in memory, then triggers an iterrupt when a buffer is full.
+#### Software
+Inside the DMA interrupt, the full ping-pong buffer is copied into the circular buffer.
+Inside the main loop, a chunk of data is taken from the circular buffer, formatted with a header and footer, then sent via SPI to the SD card.
