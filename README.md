@@ -5,7 +5,7 @@ This is the code for a data logger currently being created at the UCSC Autonomou
 See http://byron.soe.ucsc.edu/wiki/Slogger for more documentation.
 
 ## Using the Slogger ##
-Put a valid "config.txt" file onto the target micro SD card. Insert the card and connect the Slogger to a serial input. A new file will be created on the card with a name like "0001.txt". (The number increases by one for every reset.) When logging is finished, use the "dataExract.py" tool to remove headers and footers from the data.
+Put a valid "config.txt" file onto the target micro SD card. Insert the card and connect the Slogger to a serial input. A new file will be created on the card with a name like "0001.txt". (The number increases by one for every reset.) When logging is finished, use the "dataExtract.py" tool to remove headers and footers from the data.
 
 ### Other Usage Notes ###
 
@@ -13,7 +13,7 @@ Put a valid "config.txt" file onto the target micro SD card. Insert the card and
 
 > Inserting an SD card might cause the device to reset.
 
-> Resetting the device will cause a new file to be created
+> Resetting the device will cause a new file to be created.
 
 > Data is recorded in chunks of 506 bytes. It is possible for the last 505 bytes of data to be lost.
 
@@ -27,3 +27,19 @@ The DMA peripheral receives incoming serial data from the UART peripheral, puts 
 #### Software
 Inside the DMA interrupt, the full ping-pong buffer is copied into the circular buffer.
 Inside the main loop, a chunk of data is taken from the circular buffer, formatted with a header and footer, then sent via SPI to the SD card.
+
+### Custom Libraries ###
+#### NewSDWrite
+This library uses parts of Microchip's SD-SPI and FSIO libraries to read and efficiently write to the SD card. It uses functions which were meant to only be used inside of Microchip's libraries.
+#### Uart2
+This library uses the DMA to receive data from the UART2 peripheral. All of the DMA stuff is in here.
+
+### Other Libraries ###
+#### CircularBuffer
+This library sets up and deals with the circular buffer.
+#### DEE
+This library emulates an EEPROM peripheral. This is used inside the NewSDWrite library for naming the new file created on reset.
+#### SD-SPI and FSIO
+These libraries are used by NewSDWrite.
+
+The Uart2 and Timer2 libraries are not used in the current version.
