@@ -22,17 +22,17 @@ Put a valid "config.txt" file onto the target micro SD card. Insert the card and
 ## Code ##
 ### Overview ###
 ![](/docs/images/slogger_data_flow.png "Slogger Data Flow")
-* DMA - The DMA peripheral receives incoming serial data from the UART peripheral, puts it into two ping-pong buffers in memory, then triggers an iterrupt when a buffer is full.
-* Software - Inside the DMA interrupt, the full ping-pong buffer is copied into the circular buffer.
+* __DMA__ - The DMA peripheral receives incoming serial data from the UART peripheral, puts it into two ping-pong buffers in memory, then triggers an iterrupt when a buffer is full.
+* __Software__ - Inside the DMA interrupt, the full ping-pong buffer is copied into the circular buffer.
 Inside the main loop, a chunk of data is taken from the circular buffer, formatted with a header and footer, then sent via SPI to the SD card.
 
 ### Custom Libraries ###
-* NewSDWrite - This library uses parts of Microchip's SD-SPI and FSIO libraries to read and efficiently write to the SD card. It uses functions which were meant to only be used inside of Microchip's libraries.
+* __NewSDWrite__ - This library uses parts of Microchip's SD-SPI and FSIO libraries to read and efficiently write to the SD card. It uses functions which were meant to only be used inside of Microchip's libraries.
 * Uart2 - This library uses the DMA to receive data from the UART2 peripheral. All of the DMA stuff is in here.
 
 ### Other Libraries ###
-* CircularBuffer - This library sets up and deals with the circular buffer.
-* DEE - This library emulates an EEPROM peripheral. This is used inside the NewSDWrite library for naming the new file created on reset.
-* SD-SPI and FSIO - These libraries are used by NewSDWrite.
+* __CircularBuffer__ - This library sets up and deals with the circular buffer.
+* __DEE__ - This library emulates an EEPROM peripheral. This is used inside the NewSDWrite library for naming the new file created on reset.
+* __SD-SPI__ and __FSIO__ - These libraries are used by NewSDWrite.
 
 *The Uart2 and Timer2 libraries are not used in the current version.
