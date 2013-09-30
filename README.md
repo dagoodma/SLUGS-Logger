@@ -15,7 +15,25 @@ Put a valid "config.txt" (see below) file onto the target micro SD card. Insert 
 
 * Data is recorded in chunks of 506 bytes. It is possible for the last 505 bytes of data to be lost.
 
+* The red LED is used to indicate the state of the device. When the red LED is off, the Slogger is able to log data. When the red LED is on, the device has encountered a fatal error and needs to be reset to continue logging.
+
 * **IMPORTANT:** This project is still in development. Chunks of data might be lost. Please take note of any issues, and send them to the developer: Jesse Harkin (jdharkin@ucsc.edu).
+
+## Motivation ##
+This project was created because our lab found no available data-loggers that are:
+* Reliable at high speeds
+* Robust
+
+More specifically, the Slogger was designed to meet these requirements:
+* Support continuous 115200 buad UART
+* Maintain the file system while minimizing writes
+  * Allocate a file "sweet spot" in size and then increase in that size as needed
+* Integrity checking
+  * Data checksums
+* Robust to power/card errors
+  * Ensure file system integrity even when card errors out at most inopportune moments. (i.e., a cluster update)
+
+It has also been designed with the posibility for supporting multiple inputs and multiple input types in the future.
 
 ## Code ##
 ### Overview ###
@@ -34,16 +52,14 @@ Inside the main loop, a chunk of data is taken from the circular buffer, formatt
 * **DEE** - This library emulates an EEPROM peripheral. This is used inside the NewSDWrite library for naming the new file created on reset.
 * **SD-SPI** and **FSIO** - These libraries are used by NewSDWrite.
 
-* The Uart2 and Timer2 libraries are not used in the current version.
-
-See http://byron.soe.ucsc.edu/wiki/Slogger for more documentation.
+* The Uart1 and Timer2 libraries are not used in the current version.
 
 ## Data Header/Footer ##
 Data is stored in 512 byte sectors on the SD card, which includes 6 bytes for the header/footer. (Because of this, data in this device is dealt with in chunks of 506 bytes.)
 * Header: 2 byte tag ('%^'), 1 byte identification (same as file name)
 * Footer: 1 byte checksum, 2 byte tag ('%$')
 
-The header and footer are checked then removed by the DataExtract.py script.
+The checksum is an XOR of all bytes in the data; the header and footer are not included. The header and footer are checked then removed by the DataExtract.py script.
 
 ## Config File ##
 The config file should be located on the target SD card and named "config.txt". Configurations are set with a keyword and an integer value for the desired setting. At the moment, the config file sets only one thing: the UART input baud.
