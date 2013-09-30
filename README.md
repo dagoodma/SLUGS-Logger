@@ -46,7 +46,9 @@ Data is stored in 512 byte sectors on the SD card, which includes 6 bytes for th
 The header and footer are checked then removed by the DataExtract.py script.
 
 ## Config File ##
-The config file should be located on the target SD card and named "config.txt". At the moment, the config file sets only one thing: the UART baud.
+The config file should be located on the target SD card and named "config.txt". Configurations are set with a keyword and an integer value for the desired setting. At the moment, the config file sets only one thing: the UART input baud.
+
+NOTE: The Slogger has only been tested at 115200 baud.
 
 **Example:** 
 ```
