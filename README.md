@@ -41,7 +41,7 @@ It has also been designed with the possibility for supporting additional inputs 
 * **DMA** - The DMA peripheral receives incoming serial data from the UART peripheral, puts it into two ping-pong buffers in memory, then triggers an interrupt when a buffer is full.
 * **Software** - Inside the DMA interrupt, the full ping-pong buffer is copied into the circular buffer.
 Inside the main loop, a chunk of data is taken from the circular buffer, formatted with a header and footer, then sent via SPI to the SD card.
-![](/docs/images/slogger_data_flow.png "Slogger Data Flow")
+![](/docs/slogger_data_flow.png "Slogger Data Flow")
 
 ### Custom Libraries ###
 * **NewSDWrite** - This library uses parts of Microchip's SD-SPI and FSIO libraries to read and efficiently write to the SD card. It uses functions which were meant to only be used inside of Microchip's libraries.
