@@ -1,6 +1,6 @@
 #include <xc.h>
 #include <stdint.h>
-#include "Libs/Microchip/Include/MDD File System/FSIO.h"
+#include "Microchip/Include/MDD File System/FSIO.h"
 #include <spi.h>
 #include <math.h>
 #include "Uart2.h"
@@ -11,7 +11,7 @@
 #include "Uart2.h"
 #include <stddef.h>
 #include "NewSDWrite.h"
-#include "DEE Emulation 16-bit.h"
+#include "DEE/DEE Emulation 16-bit.h"
 
 #define CONFIG_READ_SIZE 50
 #define EIGHT_THREE_LEN (8 + 1 + 3 + 1)
@@ -45,9 +45,8 @@ BYTE Write_File_Entry(FILEOBJ fo, WORD * curEntry);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 
-int utf16toStr(unsigned short int * origin, char * result, int number);
-uint8_t Checksum(uint8_t * data, int dataSize);
-int NewAllocateMultiple(FSFILE * fo);
+static uint8_t Checksum(uint8_t * data, int dataSize);
+static int NewAllocateMultiple(FSFILE * fo);
 
 FSFILE * filePointer;
 DWORD lastCluster;
@@ -55,11 +54,12 @@ unsigned int fileNumber;
 
 /**
  * Opens the config file, extracts info, searches for a new filename to use, opens the file for
- * writing
- * NEEDED FUNCTIONALITY:
+ * writing. This function assumes that the chip, SD card, and file system are all
+ * initialized and the file is ready to be read.
+ *
  *  Find previous file used, update it to actual size
- *  Allocate apporpriate file size for new entry
- * @return Buad rate extracted from the config file
+ *  Allocate appropriate file size for new entry
+ * @return Buad rate extracted from the config file or 0 if invalid
  */
 long int NewSDInit(void)
 {
@@ -73,18 +73,18 @@ long int NewSDInit(void)
     // the final file name
     char fileName[EIGHT_THREE_LEN] = {};
 
-    while (!MDD_MediaDetect()); // TODO make this smarter
-    while (!FSInit());
-
     // Open then read the config file, null terminate the config text string
-    while (configFile == NULL) configFile = FSfopen("CONFIG.TXT", FS_READPLUS); // open the file
-    FSfread(configText, 1, CONFIG_READ_SIZE, configFile);
+    configFile = FSfopen("CONFIG.TXT", FS_READPLUS); // open the file
+    if (!configFile) {
+        return 0;
+    }
+    size_t bytesRead = FSfread(configText, 1, CONFIG_READ_SIZE, configFile);
     FSrewind(configFile);
-    configText[CONFIG_READ_SIZE] = '\0';
+    configText[bytesRead] = '\0';
 
-    // extract config info
+    // Try to parse out the baud rate config info.
     if (sscanf(configText, "BAUD %ld", &baudRate) < 1) {
-        FATAL_ERROR(); // TODO have default config file? maybe not
+        return 0;
     }
 
     // Read EEPROM to find next file name
@@ -99,9 +99,11 @@ long int NewSDInit(void)
     DataEEWrite(++fileNumber, EE_ADDRESS);
 
     // Open a new file
-    filePointer = NULL;
     sprintf(fileName, "%04x.log", fileNumber);
-    while (filePointer == NULL) filePointer = FSfopen(fileName, FS_WRITE);
+    filePointer = FSfopen(fileName, FS_WRITE);
+    if (!filePointer) {
+        return 0;
+    }
 
     // Initialize data for NewSDWriteSector
     filePointer->ccls = filePointer->cluster;
@@ -122,7 +124,7 @@ long int NewSDInit(void)
  * @param outbuf An array of data (BYTES_PER_SECTOR in legnth)
  * @return 1 if successful, 0 otherwise. 
  */
-int NewSDWriteSector(Sector * sector)
+int NewSDWriteSector(Sector *sector)
 {
     DWORD CurrentSector = Cluster2Sector(filePointer->dsk, filePointer->ccls)
             + filePointer->sec;
@@ -153,7 +155,7 @@ int NewSDWriteSector(Sector * sector)
         }
         // Set cluster and sector to next cluster in our chain
         if (FILEget_next_cluster(filePointer, 1) != CE_GOOD) {
-            while (1);
+            return 0;
         }
         filePointer->sec = 0;
     } else {
@@ -171,9 +173,9 @@ int NewSDWriteSector(Sector * sector)
 /**
  * Allocates multiple clusters to the given file. !! UNTESTED
  * @param fo Pointer to the file object to allocate to
- * @return sucess (1) or failure (0)
+ * @return success (1) or failure (0)
  */
-int NewAllocateMultiple(FSFILE * fo)
+int NewAllocateMultiple(FSFILE *fo)
 {
     // save the current cluster of the file
     DWORD clusterSave = fo->ccls;
@@ -231,26 +233,6 @@ int NewFileUpdate(FSFILE * fo)
 
     Write_File_Entry(fo, &fHandle);
 
-    return 1;
-}
-
-/**
- * Copies UTF-16 string to an ASCII string. Assumes all characters in the origin string can be
- * represnted in ASCII.
- * @param origin The string to copy
- * @param result Where to put it
- * @param number Max number of characters to copy
- * @return 0 if either of the arguments are NULL, or the string to copy is too large
- */
-int utf16toStr(unsigned short int * origin, char * result, int number)
-{
-    if (origin == NULL || result == NULL) return 0;
-    int index;
-    for (index = 0; origin[index] != 0; index++) {
-        result[index] = (char) origin[index];
-        if (index == number - 1) return 0;
-    }
-    result[index] = (char) origin[index];
     return 1;
 }
 
