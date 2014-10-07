@@ -1,3 +1,0 @@
-115200 baud
-
-using data generated on the device, not sent through serial. using serial interrupts only to trigger copying of data.

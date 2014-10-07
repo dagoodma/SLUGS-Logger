@@ -1,6 +1,0 @@
-Format :
-
-two bytes - 0x1122
-four bytes - timestamp
-one byte - max buffer size of most recent tick
-one byte - max buffer size of current test
