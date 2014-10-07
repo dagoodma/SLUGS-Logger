@@ -120,7 +120,6 @@ unsigned char emulationPages[DATA_EE_BANKS * NUM_DATA_EE_PAGES][NUMBER_OF_INSTRU
 #define DEE_PAGE_SIZE (sizeof(emulationPages[0]))
 
 #if __C30_VERSION__ > 301
-    #warning "Whatevs"
     #define DEE_PAGE_TBL(bank, page) ((__builtin_tbladdress(&emulationPages) + (DEE_BANK_SIZE * (bank)) + (DEE_PAGE_SIZE * (page))) >> 16)
     #define DEE_PAGE_OFFSET(bank, page) ((__builtin_tbladdress(&emulationPages) + (DEE_BANK_SIZE * (bank)) + (DEE_PAGE_SIZE * (page))) & 0xFFFF)
 #else
