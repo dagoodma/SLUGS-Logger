@@ -1,5 +1,5 @@
-# fileName n
-# writes n sectors to fileName
+# Arguments: fileName, n
+# Generates n sectors work of data inside of fileName. This emulates the file storage done by the SLUGS-logger allowing for simple comparison.
 import sys
 
 if len(sys.argv) < 3 :

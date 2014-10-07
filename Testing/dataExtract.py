@@ -3,6 +3,7 @@ This script will copy a log file to a new file, removing headers and footers alo
 Run in command line: "python3 dataExtract.py [log file] [desination file]"
 Example: "python3 dataExtract.py 0001.txt Log21Aug.txt"
 """
+
 import sys
 
 # a basic checksum function
@@ -32,17 +33,17 @@ while nextSector:
         #process the sector
     #verify header & footer tags
     if nextSector[:2] != b'%^' :
-        print("Header Tag Failed at sector " + str(sectorNumber))
+        print("Header tag failed at sector " + str(sectorNumber))
         exit()
     if nextSector[-2:] != b'%$' :
-        print("Footer Tag Failed at sector " + str(sectorNumber))
+        print("Footer tag failed at sector " + str(sectorNumber))
     #verify header number
     if nextSector[num_pos] != fileNumber :
-        print("Number Failed at sector " + str(sectorNumber))
+        print("Number failed at sector " + str(sectorNumber))
         exit()
     #verify footer checksum
     if nextSector[check_pos] != checkSum(nextSector[header_len:-footer_len]):
-        print("Checksum Failed at sector " + str(sectorNumber))
+        print("Checksum failed at sector " + str(sectorNumber))
         exit()
     rawLog.write(nextSector[header_len:-footer_len])
     sectorNumber += 1
