@@ -21,10 +21,12 @@
 
 // The sector size of the SD card in bytes
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
-// The circular buffer size in bytes, enough to hold 20 full UART2 buffers
+// The circular buffer size in bytes, enough to hold 20 full UART2 buffers.
 #define CB_SIZE (UART2_BUFFER_SIZE * 20)
 // The state of the SD card, 0 means that no SD card is inserted.
 #define SD_IN (!SD_CD)
+// The timeout value for the amber LED counter
+#define AMBER_LED_TIMEOUT UINT16_MAX
 
 /*
  * Pic shadow register pragmas.  These set main oscillator sources, and
@@ -38,22 +40,25 @@ _FOSC(FCKSM_CSECMD & OSCIOFNC_ON & POSCMD_NONE);
 _FWDT(FWDTEN_OFF);
 _FICD(JTAGEN_OFF & ICS_PGD2);
 
+// Function prototypes for the helper functions below main
 static void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize);
 static void InitPins(void);
 
+// The circular buffer and its dataspace
 static CircularBuffer circBuf;
 static __eds__ unsigned char __attribute__((eds, space(eds))) cbData[CB_SIZE];
+
+// A temporary variable used for writing the buffer to the SD card
 static Sector tempSector;
+
 // Whether the SD card is connected or not. This is different from the card select
 // pin as it is tracking the "true" state of the SD card, if it's connected and
 // initialized properly.
 static bool sdConnected;
 
-// Debug variables
-static uint16_t maxCbGlobal;
-static uint16_t cbSize;
-static bool cbFilling;
-static char string[15];
+// Keep a counter for turning on the amber LED after X units of time after the
+// last data packet was received.
+static uint16_t ledCounter = 0;
 
 int main()
 {
@@ -93,14 +98,17 @@ int main()
     // duplication of code
     sdConnected = !SD_IN;
 
-    // Turn on the amber LED, indicating that bootup succeeded
-    _LATA4 = 1;
-
-    // Also make sure the red LED is off, we'll use it for error status later
-    _LATA3 = 0;
-
     // Main event loop
     while (1) {
+
+        // Turn back on the amber status LED after the TIMEOUT counter has
+        // expired.
+        if (ledCounter == 0) {
+            _LATA4 = 1;
+        } else {
+            --ledCounter;
+        }
+
         // If a card exists...
         if (MDD_SDSPI_MediaDetect()) {
             // If the card was just plugged in, try to reinitialize.
@@ -133,20 +141,14 @@ int main()
             // When we are connected and initialized, poll the buffer, if there
             // is data, write it.
             if (CB_PeekMany(&circBuf, tempSector.sectorFormat.data, UART2_BUFFER_SIZE)) {
-                if (NewSDWriteSector(&tempSector)) {
-                    // Remove the data we just written.
-                    CB_Remove(&circBuf, UART2_BUFFER_SIZE);
 
-                    // Debug: just after writing
-                    if (cbSize >= 2 && cbFilling) {
-                        //print buffer size
-                        sprintf(string, "%d ", cbSize);
-                        Uart2PrintStr(string);
-                    }
-                    cbFilling = false;
-                    cbSize -= 1;
-                } else { // write failed
-                    Uart2PrintStr("WF ");
+                // Try to write the data, removing it from the buffer if we did
+                // or failing hard otherwise. We also turn off the amber LED
+                // during the transaction to give an indicator of activity.
+                if (NewSDWriteSector(&tempSector)) {
+                    CB_Remove(&circBuf, UART2_BUFFER_SIZE);
+                } else {
+                    FATAL_ERROR();
                 }
             }
         }
@@ -190,12 +192,11 @@ static void InitPins(void)
 
 static void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
-    CB_WriteMany(&circBuf, Buffer, BufferSize, true); // fail early
+    // Turn off the amber LED, indicating that we're receiving data
+    _LATA4 = 0;
+    ledCounter = AMBER_LED_TIMEOUT;
 
-    // Debug: just after recieving
-    cbSize += 1;
-    if (cbSize > maxCbGlobal) {
-        maxCbGlobal = cbSize;
-    }
-    cbFilling = true;
+    // Write this data to our circular buffer. We use the fail early mode to make
+    // sure the buffer is always only full of an integer number of sectors
+    CB_WriteMany(&circBuf, Buffer, BufferSize, true);
 }
