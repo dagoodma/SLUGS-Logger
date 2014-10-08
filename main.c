@@ -98,6 +98,10 @@ int main()
     // duplication of code
     sdConnected = !SD_IN;
 
+    // Initialize with the red LED on, indicating that the system isn't ready yet.
+    // This will be cleared once the SD card is started.
+    _LATA3 = 1;
+
     // Main event loop
     while (1) {
 
