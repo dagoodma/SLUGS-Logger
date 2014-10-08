@@ -2,6 +2,7 @@
 #define	NEWSDWRITE_H
 
 #include <stdint.h>
+
 #include "Libs/Microchip/Include/MDD File System/FSIO.h"
 
 // this cannot be greater than the number of sectors in a cluster

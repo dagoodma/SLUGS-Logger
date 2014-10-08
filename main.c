@@ -4,18 +4,20 @@
  *
  * Created on February 12, 2013, 11:17 AM
  */
-#include <stdint.h>
-#include "CircularBuffer.h"
-#include <xc.h>
-#include <pps.h>
-#include "NewSDWrite/NewSDWrite.h"
-// The UartX.h files need to be included before stddef.h
-#include "Uart2.h"
 #include <stddef.h>
-#include "MDD File System/FSIO.h"
-#include "Node.h"
-#include "DEE/DEE Emulation 16-bit.h"
+#include <stdint.h>
 #include <stdio.h>
+
+#include <pps.h>
+#include <xc.h>
+
+#include "CircularBuffer.h"
+#include "Node.h"
+#include "Uart2.h"
+
+#include "MDD File System/FSIO.h" // This must come before the DEE file because the ERASE macro is overloaded
+#include "DEE/DEE Emulation 16-bit.h"
+#include "NewSDWrite/NewSDWrite.h"
 
 // The sector size of the SD card in bytes
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)

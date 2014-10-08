@@ -1,17 +1,19 @@
-#include <xc.h>
-#include <stdint.h>
-#include "Microchip/Include/MDD File System/FSIO.h"
-#include <spi.h>
 #include <math.h>
-#include "Uart2.h"
-#include <stdio.h>
-#include "Node.h"
-#include <string.h>
 #include <stdbool.h>
-#include "Uart2.h"
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <spi.h>
+#include <xc.h>
+
 #include "NewSDWrite.h"
+#include "Node.h"
+#include "Uart2.h"
+
 #include "DEE/DEE Emulation 16-bit.h"
+#include "Microchip/Include/MDD File System/FSIO.h"
 
 #define CONFIG_READ_SIZE 50
 #define EIGHT_THREE_LEN (8 + 1 + 3 + 1)
