@@ -23,8 +23,6 @@
 #define SD_SECTOR_SIZE (BYTES_PER_SECTOR)
 // The circular buffer size in bytes, enough to hold 20 full UART2 buffers.
 #define CB_SIZE (UART2_BUFFER_SIZE * 20)
-// The state of the SD card, 0 means that no SD card is inserted.
-#define SD_IN (!SD_CD)
 // The timeout value for the amber LED counter
 #define AMBER_LED_TIMEOUT UINT16_MAX
 
@@ -95,11 +93,12 @@ int main()
 
     // Set sdConnected to the opposite of the card detection signal. This allows
     // the normal connecting/disconnecting handlers to fire as appropriate without
-    // duplication of code
-    sdConnected = !SD_IN;
+    // duplication of code. Since the SD_CD signal is active-low, we don't need
+    // to invert it as sdConnected is active-high.
+    sdConnected = SD_CD;
 
     // Initialize with the red LED on, indicating that the system isn't ready yet.
-    // This will be cleared once the SD card is started.
+    // This will be cleared once the SD card is inserted.
     _LATA3 = 1;
 
     // Main event loop
@@ -122,14 +121,26 @@ int main()
                     FATAL_ERROR();
                 }
 
-                // Attempt to read baud rate configuration data from the SD card
-                unsigned long baudRate = NewSDInit();
-                if (!baudRate) {
+                // Open a new log file
+                if (!OpenNewLogFile()) {
+                    FATAL_ERROR();
+                }
+
+                // Read the configuration from the SD card
+                ConfigParams params;
+                if (!ProcessConfigFile(&params)) {
                     FATAL_ERROR();
                 }
 
                 // And configure the baud rate accordingly
-                Uart2Init(baudRate, Uart2InterruptRoutine);
+                // (Right now we don't completely support all the possible
+                //  configuration options, so we just make sure they have the
+                //  values set to something)
+                if (params.uart2BaudRate > 0 && params.uart2Input != UART_SRC_NONE) {
+                    Uart2Init(params.uart2BaudRate, Uart2InterruptRoutine);
+                } else {
+                    FATAL_ERROR();
+                }
 
                 // Attempt to initialize the SD card
                 MEDIA_INFORMATION *minfo = MDD_MediaInitialize();
@@ -179,11 +190,18 @@ static void InitPins(void)
     PPSOutput(OUT_FN_PPS_U2TX, OUT_PIN_PPS_RP43);
     PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RPI45);
 
-    // enable the SPI stuff: clock, in, out
+    // enable the SPI stuff: clock (B9), in (B14), out (B8)
+#define BOARD_PINOUT 2
+#if BOARD_PINOUT == 1
     PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
     PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
     PPSInput(IN_FN_PPS_SDI2, IN_PIN_PPS_RP42);
     PPSLock;
+#elif BOARD_PINOUT == 2
+    PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
+    PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
+    PPSInput(IN_FN_PPS_SDI2, IN_PIN_PPS_RPI46);
+#endif
 
     // And enable both the LED pins as outputs
     _TRISA3 = 0; // Red LED

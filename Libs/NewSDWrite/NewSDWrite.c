@@ -15,12 +15,16 @@
 #include "DEE/DEE Emulation 16-bit.h"
 #include "Microchip/Include/MDD File System/FSIO.h"
 
-#define CONFIG_READ_SIZE 50
+// Set how many bytes should be processed from the configuration file at a time
+#define CONFIG_READ_BATCH_SIZE 50
+
+// The configuration file cannot be bigger than this (in bytes)
+#define MAX_CONFIG_FILE_SIZE 1024
+
 #define EIGHT_THREE_LEN (8 + 1 + 3 + 1)
 #define MULTIPLE_CLUSTERS 0x04
 
 // Directory entry structure
-
 typedef struct {
     char DIR_Name[DIR_NAMESIZE]; // File name
     char DIR_Extension[DIR_EXTENSION]; // File extension
@@ -48,7 +52,7 @@ extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 
 static uint8_t Checksum(uint8_t * data, int dataSize);
-static int NewAllocateMultiple(FSFILE * fo);
+static bool NewAllocateMultiple(FSFILE * fo);
 
 FSFILE * filePointer;
 DWORD lastCluster;
@@ -59,36 +63,12 @@ unsigned int fileNumber;
  * writing. This function assumes that the chip, SD card, and file system are all
  * initialized and the file is ready to be read.
  *
- *  Find previous file used, update it to actual size
- *  Allocate appropriate file size for new entry
+ * TODO: Find previous file used, update it to actual size
+ * TODO: Allocate appropriate file size for new entry
  * @return Buad rate extracted from the config file or 0 if invalid
  */
-long int NewSDInit(void)
+bool OpenNewLogFile(void)
 {
-    // used for accessing config file
-    FSFILE *configFile = NULL;
-    char configText[CONFIG_READ_SIZE + 1];
-
-    // extracted from the config
-    long int baudRate;
-
-    // the final file name
-    char fileName[EIGHT_THREE_LEN] = {};
-
-    // Open then read the config file, null terminate the config text string
-    configFile = FSfopen("CONFIG.TXT", FS_READPLUS); // open the file
-    if (!configFile) {
-        return 0;
-    }
-    size_t bytesRead = FSfread(configText, 1, CONFIG_READ_SIZE, configFile);
-    FSrewind(configFile);
-    configText[bytesRead] = '\0';
-
-    // Try to parse out the baud rate config info.
-    if (sscanf(configText, "BAUD %ld", &baudRate) < 1) {
-        return 0;
-    }
-
     // Read EEPROM to find next file name
     while (1) {
         fileNumber = DataEERead(EE_ADDRESS);
@@ -101,10 +81,11 @@ long int NewSDInit(void)
     DataEEWrite(++fileNumber, EE_ADDRESS);
 
     // Open a new file
+    char fileName[EIGHT_THREE_LEN];
     sprintf(fileName, "%04x.log", fileNumber);
     filePointer = FSfopen(fileName, FS_WRITE);
     if (!filePointer) {
-        return 0;
+        return false;
     }
 
     // Initialize data for NewSDWriteSector
@@ -113,20 +94,119 @@ long int NewSDInit(void)
     // allocate some clusters
     NewAllocateMultiple(filePointer);
 
-    return baudRate;
+    return true;
+}
+    char fileText[50 + 2]; // FIXME
+
+bool ProcessConfigFile(ConfigParams *params)
+{
+    // Open the configuration file read-only
+    FSFILE *configFile = FSfopen("CONFIG.TXT", FS_READ);
+    if (!configFile) {
+        return false;
+    }
+
+    // Fill the params struct with nice defaults
+    params->uart1BaudRate = 0;
+    params->uart1Input = UART_SRC_NONE;
+    params->uart2BaudRate = 0;
+    params->uart2Input = UART_SRC_NONE;
+    params->canBaudRate = 0;
+
+    // If the config file is empty or huge (1k), we assume the file is invalid.
+    if (configFile->size == 0 || configFile->size > MAX_CONFIG_FILE_SIZE) {
+        return false;
+    }
+
+    // Grab the entire file into an array for processing.
+    size_t bytesRead = FSfread(fileText, sizeof(char), configFile->size, configFile);
+    fileText[bytesRead + 1] = '\n'; // Make sure it's newline-terminated
+    fileText[bytesRead + 2] = '\0'; // And also a proper C-style string
+    
+    // Locate the end of the line if there is one.
+    char *endOfLine = strchr(fileText, '\n');
+    char *startOfLine = fileText;
+    while (endOfLine) {
+        // Null-terminate this line, making sure to account for Windows line endings
+        if (*(endOfLine - 1) == '\r') {
+            *endOfLine = '\0';
+        }
+        *endOfLine = '\0';
+
+        // Grab the parameter name and value
+        char *param = strtok(startOfLine, " \t");
+        char *value = strtok(NULL, " \t");
+        if (param && value) {
+            // Now that we have a parameter/value pair, process them into the
+            // output configuration parameter struct.
+            if (strcmp(param, "UART1_INPUT") == 0) {
+                if (strcmp(value, "BUILTIN_TX") == 0) {
+                    params->uart1Input = UART_SRC_BUILTIN_TRANSMIT;
+                } else if (strcmp(value, "BUILTIN_RX") == 0) {
+                    params->uart1Input = UART_SRC_BUILTIN_RECEIVE;
+                } else if (strcmp(value, "CONN1_TX") == 0) {
+                    params->uart1Input = UART_SRC_CONN1_TRANSMIT;
+                } else if (strcmp(value, "CONN1_RX") == 0) {
+                    params->uart1Input = UART_SRC_CONN1_RECEIVE;
+                } else if (strcmp(value, "CONN2_TX") == 0) {
+                    params->uart1Input = UART_SRC_CONN2_TRANSMIT;
+                } else if (strcmp(value, "CONN2_RX") == 0) {
+                    params->uart1Input = UART_SRC_CONN2_RECEIVE;
+                } else {
+                    return false;
+                }
+            } else if (strcmp(param, "UART2_INPUT") == 0) {
+                if (strcmp(value, "BUILTIN_TX") == 0) {
+                    params->uart2Input = UART_SRC_BUILTIN_TRANSMIT;
+                } else if (strcmp(value, "BUILTIN_RX") == 0) {
+                    params->uart2Input = UART_SRC_BUILTIN_RECEIVE;
+                } else if (strcmp(value, "CONN1_TX") == 0) {
+                    params->uart2Input = UART_SRC_CONN1_TRANSMIT;
+                } else if (strcmp(value, "CONN1_RX") == 0) {
+                    params->uart2Input = UART_SRC_CONN1_RECEIVE;
+                } else if (strcmp(value, "CONN2_TX") == 0) {
+                    params->uart2Input = UART_SRC_CONN2_TRANSMIT;
+                } else if (strcmp(value, "CONN2_RX") == 0) {
+                    params->uart2Input = UART_SRC_CONN2_RECEIVE;
+                } else {
+                    return false;
+                }
+            } else if (strcmp(param, "UART1_BAUD") == 0) {
+                params->uart1BaudRate = strtoul(value, NULL, 10);
+                if (!params->uart1BaudRate) {
+                    return false;
+                }
+            } else if (strcmp(param, "UART2_BAUD") == 0) {
+                params->uart2BaudRate = strtoul(value, NULL, 10);
+                if (!params->uart2BaudRate) {
+                    return false;
+                }
+            } else if (strcmp(param, "CAN_BAUD") == 0) {
+                params->canBaudRate = strtoul(value, NULL, 10);
+                if (!params->canBaudRate) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+
+        // And continue on to the next line
+        startOfLine = endOfLine + 1;
+    }
+
+    return true;
 }
 
 /**
  * Writes the data in outbuf to the file (pointer)
- * NEEDED FUNCTIONALITY:
- *  Calculate checksum DONE
- *  Add header, etc to given d// '%$'ata DONE
- *  Allocate multiple clusters when needed
  * @param pointer The FSFILE to write to
  * @param outbuf An array of data (BYTES_PER_SECTOR in legnth)
- * @return 1 if successful, 0 otherwise. 
+ * @return True if successful
  */
-int NewSDWriteSector(Sector *sector)
+bool NewSDWriteSector(Sector *sector)
 {
     DWORD CurrentSector = Cluster2Sector(filePointer->dsk, filePointer->ccls)
             + filePointer->sec;
@@ -143,7 +223,7 @@ int NewSDWriteSector(Sector *sector)
     // Write the data
     int success = MDD_SDSPI_SectorWrite(CurrentSector, sector->raw, false);
     if (!success) {
-        return 0;
+        return false;
     }
 
     // Check to see if we need to go to a new cluster; !! Also check for end of allocated area
@@ -152,12 +232,12 @@ int NewSDWriteSector(Sector *sector)
         // if this is the last cluster, allocate more
         if (filePointer->ccls == lastCluster) {
             if (!NewAllocateMultiple(filePointer)) {
-                return 0;
+                return false;
             }
         }
         // Set cluster and sector to next cluster in our chain
         if (FILEget_next_cluster(filePointer, 1) != CE_GOOD) {
-            return 0;
+            return false;
         }
         filePointer->sec = 0;
     } else {
@@ -169,15 +249,15 @@ int NewSDWriteSector(Sector *sector)
     // save off the seek
     filePointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
 
-    return 1;
+    return true;
 }
 
 /**
  * Allocates multiple clusters to the given file. !! UNTESTED
  * @param fo Pointer to the file object to allocate to
- * @return success (1) or failure (0)
+ * @return Whether it was successful or not
  */
-int NewAllocateMultiple(FSFILE *fo)
+bool NewAllocateMultiple(FSFILE *fo)
 {
     // save the current cluster of the file
     DWORD clusterSave = fo->ccls;
@@ -201,18 +281,18 @@ int NewAllocateMultiple(FSFILE *fo)
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;
     if (NewFileUpdate(filePointer)) { // put NewFileUpdates into NewAllocateMultiple
-        return 1;
+        return true;
     } else {
-        return 0;
+        return false;
     }
 }
 
 /**
  * Mimics FSfileClose to write file info to the SD card.
  * @param fo The file to update
- * @return 1 if success, 0 for failed update
+ * @return If it was successful
  */
-int NewFileUpdate(FSFILE * fo)
+bool NewFileUpdate(FSFILE * fo)
 {
     if (fo == NULL) {
         return 0;
@@ -226,7 +306,7 @@ int NewFileUpdate(FSFILE * fo)
     // Update file entry data
     dir = LoadDirAttrib(fo, &fHandle);
     if (dir == NULL) {
-        return 0;
+        return false;
     }
     dir->DIR_FileSize = fo->size;
     dir->DIR_Attr = fo->attributes;
@@ -235,7 +315,7 @@ int NewFileUpdate(FSFILE * fo)
 
     Write_File_Entry(fo, &fHandle);
 
-    return 1;
+    return true;
 }
 
 /**
@@ -255,4 +335,3 @@ uint8_t Checksum(uint8_t * data, int dataSize)
     }
     return sum;
 }
-/* NEW FUNCTION : allocate multiple clusters */

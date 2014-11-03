@@ -2,6 +2,7 @@
 #define	NEWSDWRITE_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "Libs/Microchip/Include/MDD File System/FSIO.h"
 
@@ -29,25 +30,60 @@ typedef union {
 } Sector;
 
 /**
+ * These are possible sources for the UART input data streams.
+ * @see ConfigParams
+ */
+typedef enum {
+    UART_SRC_NONE,
+    UART_SRC_BUILTIN_TRANSMIT,
+    UART_SRC_BUILTIN_RECEIVE,
+    UART_SRC_CONN1_TRANSMIT,
+    UART_SRC_CONN1_RECEIVE,
+    UART_SRC_CONN2_TRANSMIT,
+    UART_SRC_CONN2_RECEIVE
+} UartSource;
+
+/**
+ * A struct of configuration options.
+ * @see ProcessConfigFile
+ */
+typedef struct {
+    uint32_t   uart1BaudRate;
+    UartSource uart1Input;
+    uint32_t   uart2BaudRate;
+    UartSource uart2Input;
+    uint32_t   canBaudRate;
+} ConfigParams;
+
+/**
  * Initalizes filesystems and returns a file structure for use with
  * NewSDWriteSector.
  * @param filename A string with the filename (name.ext)
- * @return A file structure
+ * @return Whether opening the log file succeeded or failed
  */
-long int NewSDInit();
+bool OpenNewLogFile();
+
+/**
+ * Process the configuration file on the current SD card. Assumes all hardware is
+ * initialized and the filesystem is ready for reading
+ * @param params The struct to return the parameter values into.
+ * @return False if the configuration file was invalid, true otherwise.
+ */
+bool ProcessConfigFile(ConfigParams *params);
 
 /**
  * Writes the data in outbuf to the file (pointer)
  * @param pointer The FSFILE to write to
- * @param outbuf An array of data (BYTES_PER_SECTOR in legnth)
- * @return 1 if successful, 0 otherwise.
+ * @param outbuf An array of data (BYTES_PER_SECTOR in length)
+ * @return True if successful, false otherwise
  */
-int NewFileUpdate(FSFILE * pointer);
+bool NewFileUpdate(FSFILE *pointer);
 
 /**
  * Mimics FSfileClose to write file info to the SD card.
  * @param fo The file to update
+ * @return True if successful, false otherwise
  */
-int NewSDWriteSector(Sector * sector);
+bool NewSDWriteSector(Sector *sector);
 
 #endif

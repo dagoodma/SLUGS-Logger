@@ -62,11 +62,12 @@
     // Description: SD-SPI Chip Select TRIS bit
     #define SD_CS_TRIS          TRISBbits.TRISB0
 
-            // Description: SD-SPI Analog/Digital Select ANSEL bit
+    // Description: SD-SPI Analog/Digital Select ANSEL bit
     #define SD_CS_ANSEL		0   //ANSELBbits.ANSB9
 
     // Description: SD-SPI Card Detect Input bit
-    #define SD_CD               !PORTAbits.RA0
+    // The state of the SD card, 0 means that the SD card is inserted.
+    #define SD_CD               PORTAbits.RA0
     // Description: SD-SPI Card Detect TRIS bit
     #define SD_CD_TRIS          TRISAbits.TRISA0
 
