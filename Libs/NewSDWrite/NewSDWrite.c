@@ -140,9 +140,7 @@ bool ProcessConfigFile(ConfigParams *params)
             // Now that we have a parameter/value pair, process them into the
             // output configuration parameter struct.
             if (strcmp(param, "UART1_INPUT") == 0) {
-                if (strcmp(value, "BUILTIN_TX") == 0) {
-                    params->uart1Input = UART_SRC_BUILTIN_TRANSMIT;
-                } else if (strcmp(value, "BUILTIN_RX") == 0) {
+                if (strcmp(value, "BUILTIN_RX") == 0) {
                     params->uart1Input = UART_SRC_BUILTIN_RECEIVE;
                 } else if (strcmp(value, "CONN1_TX") == 0) {
                     params->uart1Input = UART_SRC_CONN1_TRANSMIT;
@@ -156,9 +154,7 @@ bool ProcessConfigFile(ConfigParams *params)
                     return false;
                 }
             } else if (strcmp(param, "UART2_INPUT") == 0) {
-                if (strcmp(value, "BUILTIN_TX") == 0) {
-                    params->uart2Input = UART_SRC_BUILTIN_TRANSMIT;
-                } else if (strcmp(value, "BUILTIN_RX") == 0) {
+                if (strcmp(value, "BUILTIN_RX") == 0) {
                     params->uart2Input = UART_SRC_BUILTIN_RECEIVE;
                 } else if (strcmp(value, "CONN1_TX") == 0) {
                     params->uart2Input = UART_SRC_CONN1_TRANSMIT;
