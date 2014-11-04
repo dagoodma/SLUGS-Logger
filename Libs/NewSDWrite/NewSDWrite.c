@@ -124,22 +124,19 @@ bool ProcessConfigFile(ConfigParams *params)
     char *endOfLine = strchr(fileText, '\n');
     char *startOfLine = fileText;
     while (endOfLine) {
-        // Null-terminate this line, making sure to account for Windows line endings
+        // Convert Windows line endings to Unix ones
         if (*(endOfLine - 1) == '\r') {
-            *endOfLine = '\0';
+            *(endOfLine - 1) = '\n';
         }
-        *endOfLine = '\0';
 
         // Grab the parameter name and value
         char *param = strtok(startOfLine, " \t");
-        char *value = strtok(NULL, " \t");
+        char *value = strtok(NULL, "\n");
         if (param && value) {
             // Now that we have a parameter/value pair, process them into the
             // output configuration parameter struct.
             if (strcmp(param, "UART1_INPUT") == 0) {
-                if (strcmp(value, "BUILTIN_TX") == 0) {
-                    params->uart1Input = UART_SRC_BUILTIN_TRANSMIT;
-                } else if (strcmp(value, "BUILTIN_RX") == 0) {
+                if (strcmp(value, "BUILTIN_RX") == 0) {
                     params->uart1Input = UART_SRC_BUILTIN_RECEIVE;
                 } else if (strcmp(value, "CONN1_TX") == 0) {
                     params->uart1Input = UART_SRC_CONN1_TRANSMIT;
@@ -153,9 +150,7 @@ bool ProcessConfigFile(ConfigParams *params)
                     return false;
                 }
             } else if (strcmp(param, "UART2_INPUT") == 0) {
-                if (strcmp(value, "BUILTIN_TX") == 0) {
-                    params->uart2Input = UART_SRC_BUILTIN_TRANSMIT;
-                } else if (strcmp(value, "BUILTIN_RX") == 0) {
+                if (strcmp(value, "BUILTIN_RX") == 0) {
                     params->uart2Input = UART_SRC_BUILTIN_RECEIVE;
                 } else if (strcmp(value, "CONN1_TX") == 0) {
                     params->uart2Input = UART_SRC_CONN1_TRANSMIT;

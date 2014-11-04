@@ -132,14 +132,44 @@ int main()
                     FATAL_ERROR();
                 }
 
+                // Make sure that at least one source is enabled
+                if (params.canBaudRate == 0 &&
+                    (params.uart1Input == UART_SRC_NONE || params.uart2BaudRate == 0) &&
+                    (params.uart2Input == UART_SRC_NONE || params.uart2BaudRate == 0)) {
+                    FATAL_ERROR();
+                }
+
                 // And configure the baud rate accordingly
                 // (Right now we don't completely support all the possible
                 //  configuration options, so we just make sure they have the
                 //  values set to something)
                 if (params.uart2BaudRate > 0 && params.uart2Input != UART_SRC_NONE) {
+
+                    // Set up the correct UART pins based on the selected connector
+                    PPSUnLock;
+                    switch (params.uart2Input) {
+                        case UART_SRC_BUILTIN_RECEIVE: // B13
+                            PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RPI45);
+                            break;
+                        case UART_SRC_CONN1_TRANSMIT: // B15
+                            PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RPI47);
+                            break;
+                        case UART_SRC_CONN1_RECEIVE: // B12
+                            PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RPI44);
+                            break;
+                        case UART_SRC_CONN2_TRANSMIT: // B1
+                            PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RPI33);
+                            break;
+                        case UART_SRC_CONN2_RECEIVE: // B10
+                            PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RP42);
+                            break;
+                        default:
+                            FATAL_ERROR();
+                    }
+                    PPSLock;
+
+                    // And initialize the UART peripheral
                     Uart2Init(params.uart2BaudRate, Uart2InterruptRoutine);
-                } else {
-                    FATAL_ERROR();
                 }
 
                 // Attempt to initialize the SD card
@@ -186,22 +216,12 @@ static void InitPins(void)
     PPSOutput(OUT_FN_PPS_C1TX, OUT_PIN_PPS_RP39);
     PPSInput(IN_FN_PPS_C1RX, IN_PIN_PPS_RP20);
 
-    // To enable UART2 pins: TX on 11, RX on 13
-    PPSOutput(OUT_FN_PPS_U2TX, OUT_PIN_PPS_RP43);
-    PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RPI45);
-
     // enable the SPI stuff: clock (B9), in (B14), out (B8)
-#define BOARD_PINOUT 2
-#if BOARD_PINOUT == 1
-    PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
-    PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
-    PPSInput(IN_FN_PPS_SDI2, IN_PIN_PPS_RP42);
-    PPSLock;
-#elif BOARD_PINOUT == 2
     PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
     PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
     PPSInput(IN_FN_PPS_SDI2, IN_PIN_PPS_RPI46);
-#endif
+
+    PPSLock;
 
     // And enable both the LED pins as outputs
     _TRISA3 = 0; // Red LED
