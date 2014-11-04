@@ -127,15 +127,14 @@ bool ProcessConfigFile(ConfigParams *params)
     char *endOfLine = strchr(fileText, '\n');
     char *startOfLine = fileText;
     while (endOfLine) {
-        // Null-terminate this line, making sure to account for Windows line endings
+        // Convert Windows line endings to Unix ones
         if (*(endOfLine - 1) == '\r') {
-            *endOfLine = '\0';
+            *(endOfLine - 1) = '\n';
         }
-        *endOfLine = '\0';
 
         // Grab the parameter name and value
         char *param = strtok(startOfLine, " \t");
-        char *value = strtok(NULL, " \t");
+        char *value = strtok(NULL, "\n");
         if (param && value) {
             // Now that we have a parameter/value pair, process them into the
             // output configuration parameter struct.
