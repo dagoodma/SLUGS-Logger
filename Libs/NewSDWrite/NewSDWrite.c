@@ -15,9 +15,6 @@
 #include "DEE/DEE Emulation 16-bit.h"
 #include "Microchip/Include/MDD File System/FSIO.h"
 
-// Set how many bytes should be processed from the configuration file at a time
-#define CONFIG_READ_BATCH_SIZE 50
-
 // The configuration file cannot be bigger than this (in bytes)
 #define MAX_CONFIG_FILE_SIZE 1024
 
@@ -96,7 +93,6 @@ bool OpenNewLogFile(void)
 
     return true;
 }
-    char fileText[50 + 2]; // FIXME
 
 bool ProcessConfigFile(ConfigParams *params)
 {
@@ -119,6 +115,7 @@ bool ProcessConfigFile(ConfigParams *params)
     }
 
     // Grab the entire file into an array for processing.
+    char fileText[configFile->size + 2];
     size_t bytesRead = FSfread(fileText, sizeof(char), configFile->size, configFile);
     fileText[bytesRead + 1] = '\n'; // Make sure it's newline-terminated
     fileText[bytesRead + 2] = '\0'; // And also a proper C-style string
