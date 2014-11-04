@@ -217,17 +217,11 @@ static void InitPins(void)
     PPSInput(IN_FN_PPS_C1RX, IN_PIN_PPS_RP20);
 
     // enable the SPI stuff: clock (B9), in (B14), out (B8)
-#define BOARD_PINOUT 2
-#if BOARD_PINOUT == 1
-    PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
-    PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
-    PPSInput(IN_FN_PPS_SDI2, IN_PIN_PPS_RP42);
-    PPSLock;
-#elif BOARD_PINOUT == 2
     PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
     PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
     PPSInput(IN_FN_PPS_SDI2, IN_PIN_PPS_RPI46);
-#endif
+
+    PPSLock;
 
     // And enable both the LED pins as outputs
     _TRISA3 = 0; // Red LED
