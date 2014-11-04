@@ -192,6 +192,7 @@ bool ProcessConfigFile(ConfigParams *params)
 
         // And continue on to the next line
         startOfLine = endOfLine + 1;
+        endOfLine = strchr(startOfLine, '\n');
     }
 
     return true;
