@@ -62,21 +62,23 @@ static uint16_t ledCounter = 0;
 
 int main()
 {
-    // Clock init: M=43, N1,2 = 2 == 39.61MIPS
+    // Clock init to 80MHz
     {
-        PLLFBD = 43;
-        CLKDIVbits.PLLPOST = 0; // N1 = 2
-        CLKDIVbits.PLLPRE = 0; // N2 = 2
-        OSCTUN = 0;
-        RCONbits.SWDTEN = 0;
+	/// First step is to move over to the FRC w/ PLL clock from the default FRC clock.
+	// Set the clock to 79.84MHz.
+	PLLFBD = 63;            // M = 65
+	CLKDIVbits.PLLPOST = 0; // N1 = 2
+	CLKDIVbits.PLLPRE = 1;  // N2 = 3
 
-        __builtin_write_OSCCONH(0x01); // Initiate Clock Switch to Primary (3?)
+	// Initiate Clock Switch to FRM oscillator with PLL.
+	__builtin_write_OSCCONH(0x01);
+	__builtin_write_OSCCONL(OSCCON | 0x01);
 
-        __builtin_write_OSCCONL(0x01); // Start clock switching
+	// Wait for Clock switch to occur.
+	while (OSCCONbits.COSC != 1);
 
-        while (OSCCONbits.COSC != 0b001); // Wait for Clock switch to occur
-
-        while (OSCCONbits.LOCK != 1);
+	// And finally wait for the PLL to lock.
+	while (OSCCONbits.LOCK != 1);
     }
 
     // Initialize EEPROM emulation library.

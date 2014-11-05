@@ -48,14 +48,9 @@
 
 #if defined (__dsPIC33E__) || defined (__PIC24E__)
 
-    #define GetSystemClock()        120000000
+    #define GetSystemClock()        80000000
     #define GetPeripheralClock()    (GetSystemClock() / 2)
     #define GetInstructionClock()   (GetSystemClock() / 2)
-
-    // Clock values
-    #define MILLISECONDS_PER_TICK       10                      // Definition for use with a tick timer
-    #define TIMER_PRESCALER             TIMER_PRESCALER_64      // Definition for use with a tick timer
-    #define TIMER_PERIOD                9375                    // Definition for use with a tick timer
 
     // Description: SD-SPI Chip Select Output bit
     #define SD_CS               PORTBbits.RB0
@@ -103,7 +98,7 @@
     // Description: The TRIS bit for the SCK pin
     #define SPICLOCK            TRISBbits.TRISB9
     // Description: The TRIS bit for the SDI pin
-    #define SPIIN               TRISBbits.TRISB10
+    #define SPIIN               TRISBbits.TRISB14
     // Description: The TRIS bit for the SDO pin
     #define SPIOUT              TRISBbits.TRISB8
 
