@@ -51,7 +51,7 @@ extern BYTE gNeedDataWrite;
 static uint8_t Checksum(uint8_t * data, int dataSize);
 static bool NewAllocateMultiple(FSFILE * fo);
 
-FSFILE * filePointer;
+static FSFILE *logFilePointer; // A pointer to the current log file
 DWORD lastCluster;
 unsigned int fileNumber;
 
@@ -80,16 +80,16 @@ bool OpenNewLogFile(void)
     // Open a new file
     char fileName[EIGHT_THREE_LEN];
     sprintf(fileName, "%04x.log", fileNumber);
-    filePointer = FSfopen(fileName, FS_WRITE);
-    if (!filePointer) {
+    logFilePointer = FSfopen(fileName, FS_WRITE);
+    if (!logFilePointer) {
         return false;
     }
 
     // Initialize data for NewSDWriteSector
-    filePointer->ccls = filePointer->cluster;
+    logFilePointer->ccls = logFilePointer->cluster;
 
     // allocate some clusters
-    NewAllocateMultiple(filePointer);
+    NewAllocateMultiple(logFilePointer);
 
     return true;
 }
@@ -116,14 +116,14 @@ bool ProcessConfigFile(ConfigParams *params)
 
     // Grab the entire file into an array for processing.
     char fileText[configFile->size + 2];
-    size_t bytesRead = FSfread(fileText, sizeof(char), configFile->size, configFile);
+    const size_t bytesRead = FSfread(fileText, sizeof(char), configFile->size, configFile);
     fileText[bytesRead + 1] = '\n'; // Make sure it's newline-terminated
     fileText[bytesRead + 2] = '\0'; // And also a proper C-style string
-    
-    // Locate the end of the line if there is one.
+
+    // We track the start and end of each line and iterate until we run off the end of it.
     char *endOfLine = strchr(fileText, '\n');
     char *startOfLine = fileText;
-    while (endOfLine) {
+    while (startOfLine < &fileText[bytesRead]) {
         // Convert Windows line endings to Unix ones
         if (*(endOfLine - 1) == '\r') {
             *(endOfLine - 1) = '\n';
@@ -201,10 +201,10 @@ bool ProcessConfigFile(ConfigParams *params)
  */
 bool NewSDWriteSector(Sector *sector)
 {
-    DWORD CurrentSector = Cluster2Sector(filePointer->dsk, filePointer->ccls)
-            + filePointer->sec;
-    DWORD SectorLimit = Cluster2Sector(filePointer->dsk, filePointer->ccls)
-            + filePointer->dsk->SecPerClus;
+    const DWORD currentSector = Cluster2Sector(logFilePointer->dsk, logFilePointer->ccls)
+            + logFilePointer->sec;
+    const DWORD sectorLimit = Cluster2Sector(logFilePointer->dsk, logFilePointer->ccls)
+            + logFilePointer->dsk->SecPerClus;
 
     // add header and footer
     sector->sectorFormat.headerTag = HEADER_TAG;
@@ -214,33 +214,33 @@ bool NewSDWriteSector(Sector *sector)
     sector->sectorFormat.footerTag = FOOTER_TAG;
 
     // Write the data
-    int success = MDD_SDSPI_SectorWrite(CurrentSector, sector->raw, false);
+    const bool success = MDD_SDSPI_SectorWrite(currentSector, sector->raw, false);
     if (!success) {
         return false;
     }
 
-    // Check to see if we need to go to a new cluster; !! Also check for end of allocated area
-    // else, next sector
-    if (CurrentSector == SectorLimit - 1) {
+    // Check to see if we need to go to a new cluster. Also check for the end of the allocated area
+    // allocating another cluster if necessary.
+    if (currentSector == sectorLimit - 1) {
         // if this is the last cluster, allocate more
-        if (filePointer->ccls == lastCluster) {
-            if (!NewAllocateMultiple(filePointer)) {
+        if (logFilePointer->ccls == lastCluster) {
+            if (!NewAllocateMultiple(logFilePointer)) {
                 return false;
             }
         }
         // Set cluster and sector to next cluster in our chain
-        if (FILEget_next_cluster(filePointer, 1) != CE_GOOD) {
+        if (FILEget_next_cluster(logFilePointer, 1) != CE_GOOD) {
             return false;
         }
-        filePointer->sec = 0;
+        logFilePointer->sec = 0;
     } else {
-        filePointer->sec++;
+        logFilePointer->sec++;
     }
     // save off the positon
-    filePointer->pos = BYTES_PER_SECTOR - 1; // current position in sector (bytes)
+    logFilePointer->pos = BYTES_PER_SECTOR - 1; // current position in sector (bytes)
 
     // save off the seek
-    filePointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
+    logFilePointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
 
     return true;
 }
@@ -253,10 +253,10 @@ bool NewSDWriteSector(Sector *sector)
 bool NewAllocateMultiple(FSFILE *fo)
 {
     // save the current cluster of the file
-    DWORD clusterSave = fo->ccls;
+    const DWORD clusterSave = fo->ccls;
 
     // allocate new clusters
-    int i;
+    uint8_t i;
     for (i = 0; i < MULTIPLE_CLUSTERS; i++) {
         FILEallocate_new_cluster(fo, 0);
     }
@@ -273,7 +273,7 @@ bool NewAllocateMultiple(FSFILE *fo)
     // save all this to the card
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;
-    if (NewFileUpdate(filePointer)) { // put NewFileUpdates into NewAllocateMultiple
+    if (NewFileUpdate(logFilePointer)) { // put NewFileUpdates into NewAllocateMultiple
         return true;
     } else {
         return false;
@@ -285,7 +285,7 @@ bool NewAllocateMultiple(FSFILE *fo)
  * @param fo The file to update
  * @return If it was successful
  */
-bool NewFileUpdate(FSFILE * fo)
+bool NewFileUpdate(FSFILE *fo)
 {
     if (fo == NULL) {
         return 0;

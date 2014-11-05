@@ -136,7 +136,7 @@ int main()
 
                 // Make sure that at least one source is enabled
                 if (params.canBaudRate == 0 &&
-                    (params.uart1Input == UART_SRC_NONE || params.uart2BaudRate == 0) &&
+                    (params.uart1Input == UART_SRC_NONE || params.uart1BaudRate == 0) &&
                     (params.uart2Input == UART_SRC_NONE || params.uart2BaudRate == 0)) {
                     FATAL_ERROR();
                 }
