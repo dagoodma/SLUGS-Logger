@@ -12,7 +12,6 @@
 #include <xc.h>
 
 #include "CircularBuffer.h"
-#include "Node.h"
 #include "Uart2.h"
 
 #include "MDD File System/FSIO.h" // This must come before the DEE file because the ERASE macro is overloaded
@@ -25,6 +24,20 @@
 #define CB_SIZE (UART2_BUFFER_SIZE * 20)
 // The timeout value for the amber LED counter
 #define AMBER_LED_TIMEOUT UINT16_MAX
+
+/**
+ * Enter an infinite loop and flash one of the status LEDs at 10Hz. This should be used when there
+ * is an unrecoverable error onboard, like when a subsystem fails to initialize.
+ */
+#define FATAL_ERROR() do {                                                         \
+                          _TRISA3 = 0;                                             \
+                          _LATA3 = 1;                                              \
+                          while (1) {                                              \
+                              unsigned long int i;                                 \
+                              for (i = 0; i < GetInstructionClock() / 200; ++i);    \
+                              _LATA3 ^= 1;                                         \
+                          }                                                        \
+                      } while (0);
 
 /*
  * Pic shadow register pragmas.  These set main oscillator sources, and
