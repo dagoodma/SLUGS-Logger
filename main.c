@@ -119,7 +119,7 @@ int main()
     _LATA3 = 1;
 
     // Main event loop
-    while (1) {
+    while (true) {
 
         // Turn back on the amber status LED after the TIMEOUT counter has
         // expired.
@@ -204,13 +204,11 @@ int main()
             // is data, write it.
             if (CB_PeekMany(&circBuf, tempSector.sectorFormat.data, UART2_BUFFER_SIZE)) {
 
-                // Try to write the data, removing it from the buffer if we did
-                // or failing hard otherwise. We also turn off the amber LED
-                // during the transaction to give an indicator of activity.
+                // Try to write the data, removing it from the buffer if we succeeded. If we don't
+                // succeed, we just continue, which will try to write the sector again as it'll
+                // remain in the buffer.
                 if (NewSDWriteSector(&tempSector)) {
                     CB_Remove(&circBuf, UART2_BUFFER_SIZE);
-                } else {
-                    FATAL_ERROR();
                 }
             }
         }
@@ -233,7 +231,7 @@ static void InitPins(void)
     PPSOutput(OUT_FN_PPS_C1TX, OUT_PIN_PPS_RP39);
     PPSInput(IN_FN_PPS_C1RX, IN_PIN_PPS_RP20);
 
-    // enable the SPI stuff: clock (B9), in (B14), out (B8)
+    // enable the SPI stuff: clock (B9), out (B8), in (B14)
     PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
     PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
     PPSInput(IN_FN_PPS_SDI2, IN_PIN_PPS_RPI46);
