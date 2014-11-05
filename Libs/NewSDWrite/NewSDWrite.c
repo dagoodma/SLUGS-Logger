@@ -123,8 +123,8 @@ bool ProcessConfigFile(ConfigParams *params)
     // Grab the entire file into an array for processing.
     char fileText[configFile->size + 2];
     const size_t bytesRead = FSfread(fileText, sizeof(char), configFile->size, configFile);
-    fileText[bytesRead + 1] = '\n'; // Make sure it's newline-terminated
-    fileText[bytesRead + 2] = '\0'; // And also a proper C-style string
+    fileText[bytesRead] = '\n'; // Make sure it's newline-terminated
+    fileText[bytesRead + 1] = '\0'; // And also a proper C-style string
 
     // We track the start and end of each line and iterate until we run off the end of it.
     char *endOfLine = strchr(fileText, '\n');
