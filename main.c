@@ -34,7 +34,9 @@
 _FSS(RSS_NO_RAM & SSS_NO_FLASH & SWRP_WRPROTECT_OFF)
 #endif
 _FOSCSEL(FNOSC_FRC & PWMLOCK_OFF);
-_FOSC(FCKSM_CSECMD & OSCIOFNC_ON & POSCMD_NONE);
+// We need to make sure we can configure the peripheral pins multiple times, as I need to do it
+// in separate locations for the different peripherals.
+_FOSC(FCKSM_CSECMD & OSCIOFNC_ON & POSCMD_NONE & IOL1WAY_OFF);
 _FWDT(FWDTEN_OFF);
 _FICD(JTAGEN_OFF & ICS_PGD2);
 
