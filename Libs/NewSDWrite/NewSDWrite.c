@@ -70,16 +70,18 @@ static uint16_t fileNumber; // The current log number file. Stored in EEPROM.
  */
 bool OpenNewLogFile(void)
 {
-    // Read EEPROM to find next file name
-    while (true) {
-        fileNumber = DataEERead(EE_ADDRESS);
-        if (fileNumber != 0xFFFF) {
-            break;
-        }
+    // Read EEPROM to find next file name.
+    fileNumber = DataEERead(EE_ADDRESS);
+    if (fileNumber == 0xFFFF) {
+        // If no file number was found (all FFFFs, then use 0 to start.
+        fileNumber = 0;
         DataEEWrite(0x00, EE_ADDRESS);
+    } else {
+        // TODO CORRECT THE LAST FILE SIZE HERE
+
+        // Otherwise we have a valid file number, so let's start using the next one.
+        DataEEWrite(++fileNumber, EE_ADDRESS);
     }
-    // TODO CORRECT THE LAST FILE SIZE HERE
-    DataEEWrite(++fileNumber, EE_ADDRESS);
 
     // Open a new file
     char fileName[LOG_FILENAME_LENGTH + 1];
@@ -92,7 +94,7 @@ bool OpenNewLogFile(void)
     // Initialize data for NewSDWriteSector
     logFilePointer->ccls = logFilePointer->cluster;
 
-    // allocate some clusters
+    // Allocate some clusters
     NewAllocateMultiple(logFilePointer);
 
     return true;
