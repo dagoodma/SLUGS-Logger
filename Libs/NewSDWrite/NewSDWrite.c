@@ -18,9 +18,13 @@
 // The configuration file cannot be bigger than this (in bytes)
 #define MAX_CONFIG_FILE_SIZE 1024
 
-#define EIGHT_THREE_LEN (8 + 1 + 3 + 1)
-#define MULTIPLE_CLUSTERS 0x04
+// Set the length of a log filename (format is 'XXX.log')
+#define LOG_FILENAME_LENGTH (4 + 1 + 3)
 
+// Specify how many clusters should be allocated at a time. Clusters default to 32KiB.
+#define MULTIPLE_CLUSTERS 4
+
+/** Rip some datatypes and function definitions from FSIO.c **/
 // Directory entry structure
 typedef struct {
     char DIR_Name[DIR_NAMESIZE]; // File name
@@ -37,23 +41,23 @@ typedef struct {
     WORD DIR_FstClusLO; // Low word of the entry's first cluster number
     DWORD DIR_FileSize; // The 32-bit file size
 } _DIRENTRY;
-
 typedef _DIRENTRY * DIRENTRY; // A pointer to a directory entry structure
 typedef FSFILE * FILEOBJ;
 BYTE FILEallocate_new_cluster(FSFILE *fo, BYTE mode);
 DWORD Cluster2Sector(DISK *, DWORD);
 DIRENTRY LoadDirAttrib(FILEOBJ fo, WORD *fHandle);
 DWORD WriteFAT(DISK *dsk, DWORD ccls, DWORD value, BYTE forceWrite);
-BYTE Write_File_Entry(FILEOBJ fo, WORD * curEntry);
+BYTE Write_File_Entry(FILEOBJ fo, WORD *curEntry);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 
-static uint8_t Checksum(uint8_t * data, int dataSize);
-static bool NewAllocateMultiple(FSFILE * fo);
+// Internal functions
+static uint8_t Checksum(uint8_t *data, int dataSize);
+static bool NewAllocateMultiple(FSFILE *fo);
 
 static FSFILE *logFilePointer; // A pointer to the current log file
-DWORD lastCluster;
-unsigned int fileNumber;
+static DWORD lastCluster; // The last cluster number used for the current log file
+static uint16_t fileNumber; // The current log number file. Stored in EEPROM.
 
 /**
  * Opens the config file, extracts info, searches for a new filename to use, opens the file for
@@ -67,7 +71,7 @@ unsigned int fileNumber;
 bool OpenNewLogFile(void)
 {
     // Read EEPROM to find next file name
-    while (1) {
+    while (true) {
         fileNumber = DataEERead(EE_ADDRESS);
         if (fileNumber != 0xFFFF) {
             break;
@@ -78,7 +82,7 @@ bool OpenNewLogFile(void)
     DataEEWrite(++fileNumber, EE_ADDRESS);
 
     // Open a new file
-    char fileName[EIGHT_THREE_LEN];
+    char fileName[LOG_FILENAME_LENGTH + 1];
     sprintf(fileName, "%04x.log", fileNumber);
     logFilePointer = FSfopen(fileName, FS_WRITE);
     if (!logFilePointer) {
@@ -246,16 +250,16 @@ bool NewSDWriteSector(Sector *sector)
 }
 
 /**
- * Allocates multiple clusters to the given file. !! UNTESTED
+ * Allocates multiple clusters to the given file.
  * @param fo Pointer to the file object to allocate to
  * @return Whether it was successful or not
  */
 bool NewAllocateMultiple(FSFILE *fo)
 {
-    // save the current cluster of the file
+    // Save the current cluster of the file
     const DWORD clusterSave = fo->ccls;
 
-    // allocate new clusters
+    // Allocate several new clusters
     uint8_t i;
     for (i = 0; i < MULTIPLE_CLUSTERS; i++) {
         FILEallocate_new_cluster(fo, 0);
@@ -270,7 +274,8 @@ bool NewAllocateMultiple(FSFILE *fo)
     // update file size
     fo->size += fo->dsk->SecPerClus * MULTIPLE_CLUSTERS * BYTES_PER_SECTOR;
 
-    // save all this to the card
+    // Save all this to the card. We don't need to write any data, just update the FAT table, so
+    // we have to set some internal variables for the FSIO library to get this to work.
     gNeedFATWrite = TRUE;
     gNeedDataWrite = FALSE;
     if (NewFileUpdate(logFilePointer)) { // put NewFileUpdates into NewAllocateMultiple
@@ -290,14 +295,13 @@ bool NewFileUpdate(FSFILE *fo)
     if (fo == NULL) {
         return 0;
     }
-    DIRENTRY dir;
     WORD fHandle = fo->entry;
 
     // Write the file data
     WriteFAT(fo->dsk, 0, 0, TRUE);
 
     // Update file entry data
-    dir = LoadDirAttrib(fo, &fHandle);
+    const DIRENTRY dir = LoadDirAttrib(fo, &fHandle);
     if (dir == NULL) {
         return false;
     }
