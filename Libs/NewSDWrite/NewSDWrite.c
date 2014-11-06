@@ -18,9 +18,6 @@
 // The configuration file cannot be bigger than this (in bytes)
 #define MAX_CONFIG_FILE_SIZE 1024
 
-// Set the length of a log filename (format is 'XXX.log')
-#define LOG_FILENAME_LENGTH (4 + 1 + 3)
-
 // Specify how many clusters should be allocated at a time. Clusters default to 32KiB.
 #define MULTIPLE_CLUSTERS 4
 
@@ -54,6 +51,7 @@ extern BYTE gNeedDataWrite;
 // Internal functions
 static uint8_t Checksum(uint8_t *data, int dataSize);
 static bool NewAllocateMultiple(FSFILE *fo);
+void Uint16ToHex(uint16_t x, char out[5]);
 
 static FSFILE *logFilePointer; // A pointer to the current log file
 static DWORD lastCluster; // The last cluster number used for the current log file
@@ -83,10 +81,11 @@ bool OpenNewLogFile(void)
         DataEEWrite(++fileNumber, EE_ADDRESS);
     }
 
-    // Open a new file
-    char fileName[LOG_FILENAME_LENGTH + 1];
-    sprintf(fileName, "%04x.log", fileNumber);
-    logFilePointer = FSfopen(fileName, FS_WRITE);
+    // Open a new log file
+    char logFileName[] = "0000.log";
+    Uint16ToHex(fileNumber, logFileName);
+    logFileName[4] = '.'; // Re-add the period that was overwritten by the NUL-terminating character in Uint16ToHex()
+    logFilePointer = FSfopen(logFileName, FS_WRITE);
     if (!logFilePointer) {
         return false;
     }
@@ -207,10 +206,10 @@ bool ProcessConfigFile(ConfigParams *params)
  */
 bool NewSDWriteSector(Sector *sector)
 {
-    const DWORD currentSector = Cluster2Sector(logFilePointer->dsk, logFilePointer->ccls)
-            + logFilePointer->sec;
-    const DWORD sectorLimit = Cluster2Sector(logFilePointer->dsk, logFilePointer->ccls)
-            + logFilePointer->dsk->SecPerClus;
+    const DWORD currentSector = Cluster2Sector(logFilePointer->dsk, logFilePointer->ccls) +
+        logFilePointer->sec;
+    const DWORD sectorLimit = Cluster2Sector(logFilePointer->dsk, logFilePointer->ccls) +
+        logFilePointer->dsk->SecPerClus;
 
     // add header and footer
     sector->sectorFormat.headerTag = HEADER_TAG;
@@ -333,4 +332,19 @@ uint8_t Checksum(uint8_t * data, int dataSize)
         sum ^= data[i];
     }
     return sum;
+}
+
+/**
+ * Convert an unsigned integer to a 4-character hexadecimal ASCII string.
+ * @param x The number to convert
+ * @param out[out] The output string.
+ */
+void Uint16ToHex(uint16_t x, char out[5])
+{
+   const char hexDigits[] = "0123456789ABCDEF";
+   out[3] = hexDigits[x & 0xF];
+   out[2] = hexDigits[(x >> 4) & 0xF];
+   out[1] = hexDigits[(x >> 8) & 0xF];
+   out[0] = hexDigits[(x >> 12) & 0xF];
+   out[4] = '\0';
 }
