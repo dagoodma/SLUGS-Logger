@@ -46,11 +46,14 @@
 #ifdef _FSS       /* for chip with memory protection options */
 _FSS(RSS_NO_RAM & SSS_NO_FLASH & SWRP_WRPROTECT_OFF)
 #endif
+// Use internal RC to start; we then switch to PLL'd iRC.
 _FOSCSEL(FNOSC_FRC & PWMLOCK_OFF);
 // We need to make sure we can configure the peripheral pins multiple times, as I need to do it
 // in separate locations for the different peripherals.
 _FOSC(FCKSM_CSECMD & OSCIOFNC_ON & POSCMD_NONE & IOL1WAY_OFF);
+// Disable watchdog timer
 _FWDT(FWDTEN_OFF);
+// Disable JTAG and specify port 2 for ICD pins.
 _FICD(JTAGEN_OFF & ICS_PGD2);
 
 // Function prototypes for the helper functions below main
@@ -75,13 +78,13 @@ static uint16_t ledCounter = 0;
 
 int main()
 {
-    // Clock init to 80MHz
+    // Clock init to 80MHz for 40MIPS operation
     {
 	/// First step is to move over to the FRC w/ PLL clock from the default FRC clock.
 	// Set the clock to 79.84MHz.
 	PLLFBD = 63;            // M = 65
-	CLKDIVbits.PLLPOST = 0; // N1 = 2
-	CLKDIVbits.PLLPRE = 1;  // N2 = 3
+	CLKDIVbits.PLLPOST = 0; // N2 = 2
+	CLKDIVbits.PLLPRE = 1;  // N1 = 3
 
 	// Initiate Clock Switch to FRM oscillator with PLL.
 	__builtin_write_OSCCONH(0x01);
