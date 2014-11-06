@@ -53,6 +53,7 @@ static uint8_t Checksum(uint8_t *data, int dataSize);
 static bool NewAllocateMultiple(FSFILE *fo);
 void Uint16ToHex(uint16_t x, char out[5]);
 
+static FSFILE *metaFilePointer; // A pointer to the current log file
 static FSFILE *logFilePointer; // A pointer to the current log file
 static DWORD lastCluster; // The last cluster number used for the current log file
 static uint16_t fileNumber; // The current log number file. Stored in EEPROM.
@@ -79,6 +80,15 @@ bool OpenNewLogFile(void)
 
         // Otherwise we have a valid file number, so let's start using the next one.
         DataEEWrite(++fileNumber, EE_ADDRESS);
+    }
+
+    // Open a new meta file
+    char metaFileName[] = "0000.meta";
+    Uint16ToHex(fileNumber, metaFileName);
+    metaFileName[4] = '.'; // Re-add the period that was overwritten by the NUL-terminating character in Uint16ToHex()
+    metaFilePointer = FSfopen(metaFileName, FS_WRITE);
+    if (!metaFilePointer) {
+        return false;
     }
 
     // Open a new log file
