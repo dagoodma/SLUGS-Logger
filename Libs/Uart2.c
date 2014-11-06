@@ -18,7 +18,7 @@ void (*InterruptCallback)(unsigned char *, int);
  * buffer. First argument is a pointer the the buffer. Second is buffer size (int).
  */
 void Uart2Init(long int baudRate, void (*Callback)(unsigned char *, int))
-{ // Just sit and spin with this. It's all with interrupts. (see lower)
+{
 	InterruptCallback = Callback;
 
 	U2MODEbits.STSEL = 0; // 1-stop bit
@@ -52,6 +52,11 @@ void Uart2Init(long int baudRate, void (*Callback)(unsigned char *, int))
 	IEC0bits.DMA0IE = 1; // Enable DMA interrupt
 
 	DMA0CONbits.CHEN = 1; // Enable DMA Channel
+}
+
+void Uart2Disable(void)
+{
+    U2MODEbits.UARTEN = 0;
 }
 
 /**

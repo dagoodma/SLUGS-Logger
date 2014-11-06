@@ -18,6 +18,11 @@
 
 void Uart2Init(long int, void (*Callback)(unsigned char *, int)); // initializes UART and DMA to a ping-pong buffer
 
+/**
+ * Disable UART2.
+ */
+void Uart2Disable(void);
+
 void Uart2PrintChar(char in); // sends a character with UART2
 
 void Uart2PrintStr(char *string); // sends a string
