@@ -60,6 +60,9 @@ _FICD(JTAGEN_OFF & ICS_PGD2);
 static void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize);
 static void InitPins(void);
 
+// Function prototypes for SD-SPI.c
+void Delayms(BYTE milliseconds);
+
 // The circular buffer and its dataspace
 static CircularBuffer circBuf;
 static __eds__ unsigned char __attribute__((eds, space(eds))) cbData[CB_SIZE];
@@ -136,7 +139,17 @@ int main()
         if (MDD_SDSPI_MediaDetect()) {
             // If the card was just plugged in, try to reinitialize.
             if (!sdConnected) {
-                // Initialize the file system
+                // If a card has been inserted, just wait 1ms to let things stabilize.
+                Delayms(1);
+
+                // And if we no longer detect a card, then it was just a glitch and we ignore this.
+                if (!MDD_SDSPI_MediaDetect()) {
+                    continue;
+                }
+
+                // Initialize the file system. Sometimes when popping out a card, this triggers a
+                // failure. This is why we don't FATAL_ERROR() here, we just continue and assume the
+                // care is disconnected
                 if (!FSInit()) {
                     FATAL_ERROR();
                 }
