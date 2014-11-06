@@ -10,6 +10,7 @@
 #define TOTAL_SECTORS 80L
 #define BYTES_PER_SECTOR 512L
 #define HEAD_FOOT_LEN 6
+#define DATA_PER_SECTOR (BYTES_PER_SECTOR-HEAD_FOOT_LEN)
 #define HEADER_TAG 0x5E25 // '%^'
 #define FOOTER_TAG 0x2425 // '%$'
 #define EE_ADDRESS 0x01
@@ -84,5 +85,13 @@ bool NewFileUpdate(FSFILE *pointer);
  * @return True if successful, false otherwise
  */
 bool NewSDWriteSector(Sector *sector);
+
+/**
+ * Logs a string to the metadata file.
+ * @param eventString The string to log to the metadata file.
+ * @param timestamp A timestamp indicating the time of the event. Seconds since Unix epoch GMT.
+ * @return True if the entire string was written.
+ */
+bool LogMetaEvent(const char *eventString, uint32_t timestamp);
 
 #endif

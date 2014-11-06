@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <pps.h>
 #include <xc.h>
@@ -133,6 +134,9 @@ int main()
     // This will be cleared once the SD card is inserted.
     _LATA3 = 1;
 
+    // Track how big the input circular buffer has gotten.
+    static uint16_t biggerCircBufSize = 0;
+
     // Main event loop
     while (true) {
 
@@ -156,9 +160,8 @@ int main()
                     continue;
                 }
 
-                // Initialize the file system. Sometimes when popping out a card, this triggers a
-                // failure. This is why we don't FATAL_ERROR() here, we just continue and assume the
-                // care is disconnected
+                // Initialize the file system. This includes setting up all the pins and initializing
+                // the SD card, it's a big function.
                 if (!FSInit()) {
                     FATAL_ERROR();
                 }
@@ -181,10 +184,28 @@ int main()
                     FATAL_ERROR();
                 }
 
-                // And configure the baud rate accordingly
-                // (Right now we don't completely support all the possible
-                //  configuration options, so we just make sure they have the
-                //  values set to something)
+                // Initialize the ECAN if it's been enabled in the config file
+                if (params.canBaudRate > 0) {
+
+                    // Enable ECAN1 pins: TX on B7, RX on B4
+                    PPSUnLock;
+                    PPSOutput(OUT_FN_PPS_C1TX, OUT_PIN_PPS_RP39);
+                    PPSInput(IN_FN_PPS_C1RX, IN_PIN_PPS_RP20);
+                    PPSLock;
+
+                    // Update our internal state of the peripherals
+                    activePeripherals |= PERIPHERAL_ECAN;
+
+                    // Log the configuration info used when starting.
+                    char x[] = "Started logging CAN data at \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+                    size_t xLen = strlen(x);
+                    ultoa(&x[xLen], params.canBaudRate, 10);
+                    xLen = strlen(x);
+                    strcpy(&x[xLen], " baud.");
+                    LogMetaEvent(x, 0);
+                }
+
+                // And configure UART2
                 if (params.uart2BaudRate > 0 && params.uart2Input != UART_SRC_NONE) {
 
                     // Set up the correct UART pins based on the selected connector. No need to set
@@ -214,14 +235,36 @@ int main()
                     // And initialize the UART peripheral
                     Uart2Init(params.uart2BaudRate, Uart2InterruptRoutine);
 
-                    // Update our internal state of the peripherals
-                    activePeripherals |= PERIPHERAL_UART2;
-                }
-
-                // Attempt to initialize the SD card
-                MEDIA_INFORMATION *minfo = MDD_MediaInitialize();
-                if (minfo->errorCode == MEDIA_CANNOT_INITIALIZE) {
-                    FATAL_ERROR();
+                    // Log the configuration info used when starting.
+                    char x[] = "Started logging from UART2 on \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+                    size_t xLen = strlen(x);
+                    switch (params.uart2Input) {
+                    case UART_SRC_BUILTIN_RECEIVE:
+                        strcpy(&x[xLen], "BUILTIN_RX");
+                        break;
+                    case UART_SRC_CONN1_RECEIVE:
+                        strcpy(&x[xLen], "CONN1_RX");
+                        break;
+                    case UART_SRC_CONN1_TRANSMIT:
+                        strcpy(&x[xLen], "CONN1_TX");
+                        break;
+                    case UART_SRC_CONN2_RECEIVE:
+                        strcpy(&x[xLen], "CONN2_RX");
+                        break;
+                    case UART_SRC_CONN2_TRANSMIT:
+                        strcpy(&x[xLen], "CONN2_TX");
+                        break;
+                    default:
+                        strcpy(&x[xLen], "UNKNOWN");
+                        break;
+                    }
+                    xLen = strlen(x);
+                    strcpy(&x[xLen], " at ");
+                    xLen = strlen(x);
+                    ultoa(&x[xLen], params.uart2BaudRate, 10);
+                    xLen = strlen(x);
+                    strcpy(&x[xLen], " baud.");
+                    LogMetaEvent(x, 0);
                 }
 
                 // Update status, including turning off the red LED
@@ -232,6 +275,19 @@ int main()
             // When we are connected and initialized, poll the buffer, if there
             // is data, write it.
             if (CB_PeekMany(&circBuf, tempSector.sectorFormat.data, UART2_BUFFER_SIZE)) {
+
+                // Log the size of the circular buffer if it's grown at all. We do this before writing
+                // out the current sector because we want it to trigger for the 1st time even if the
+                // buffer is never used beyond 1 sector.
+                if (circBuf.dataSize > biggerCircBufSize) {
+                    char x[] = "Buffer usage hit \0\0\0\0\0\0\0\0";
+                    size_t xLen = strlen(x);
+                    ultoa(&x[xLen], circBuf.dataSize / DATA_PER_SECTOR, 10);
+                    xLen = strlen(x);
+                    strcpy(&x[xLen], " sectors.");
+                    LogMetaEvent(x, 0);
+                    biggerCircBufSize = circBuf.dataSize;
+                }
 
                 // Try to write the data, removing it from the buffer if we succeeded. If we don't
                 // succeed, we just continue, which will try to write the sector again as it'll
@@ -268,9 +324,6 @@ static void InitPins(void)
 {
     // And configure the Peripheral Pin Select pins:
     PPSUnLock;
-    // To enable ECAN1 pins: TX on 7, RX on 4
-    PPSOutput(OUT_FN_PPS_C1TX, OUT_PIN_PPS_RP39);
-    PPSInput(IN_FN_PPS_C1RX, IN_PIN_PPS_RP20);
 
     // enable the SPI stuff: clock (B9), out (B8), in (B14)
     PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);

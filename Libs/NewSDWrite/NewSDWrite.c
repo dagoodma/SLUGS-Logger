@@ -45,6 +45,7 @@ DWORD Cluster2Sector(DISK *, DWORD);
 DIRENTRY LoadDirAttrib(FILEOBJ fo, WORD *fHandle);
 DWORD WriteFAT(DISK *dsk, DWORD ccls, DWORD value, BYTE forceWrite);
 BYTE Write_File_Entry(FILEOBJ fo, WORD *curEntry);
+BYTE flushData (void);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
 
@@ -209,9 +210,10 @@ bool ProcessConfigFile(ConfigParams *params)
 }
 
 /**
- * Writes the data in outbuf to the file (pointer)
- * @param pointer The FSFILE to write to
- * @param outbuf An array of data (BYTES_PER_SECTOR in legnth)
+ * Appends the given data to the end of the file. Additionally, if there's no more room in the file,
+ * allocate another several clusters worth of space.
+ *
+ * @param sector A complete sector of data to write.
  * @return True if successful
  */
 bool NewSDWriteSector(Sector *sector)
@@ -256,6 +258,29 @@ bool NewSDWriteSector(Sector *sector)
 
     // save off the seek
     logFilePointer->seek += BYTES_PER_SECTOR; // current position in file (bytes)
+
+    return true;
+}
+
+bool LogMetaEvent(const char *eventString, uint32_t timestamp)
+{
+    char x[128] = {};
+    ultoa(x, timestamp, 10);
+    size_t xLen = strlen(x);
+    x[xLen++] = ':';
+    x[xLen++] = ' ';
+    strcpy(&x[xLen], eventString);
+    xLen = strlen(x);
+    x[xLen++] = '\n';
+
+    // Write the string to the file and make sure to flush it to the SD card.
+    const size_t bytesWritten = FSfwrite(x, sizeof(char), xLen, metaFilePointer);
+    flushData();
+    gNeedFATWrite = TRUE;
+    NewFileUpdate(metaFilePointer);
+    if (bytesWritten < xLen) {
+       return false;
+    }
 
     return true;
 }
@@ -312,7 +337,7 @@ bool NewFileUpdate(FSFILE *fo)
     WriteFAT(fo->dsk, 0, 0, TRUE);
 
     // Update file entry data
-    const DIRENTRY dir = LoadDirAttrib(fo, &fHandle);
+    DIRENTRY dir = LoadDirAttrib(fo, &fHandle);
     if (dir == NULL) {
         return false;
     }
