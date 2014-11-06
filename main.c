@@ -79,6 +79,15 @@ static bool sdConnected;
 // last data packet was received.
 static uint16_t ledCounter = 0;
 
+// Keep track of which peripherals are currently enabled. Used for de-initializing them on card
+// removal.
+enum {
+    PERIPHERAL_NONE  = 0,
+    PERIPHERAL_UART1 = 0x1,
+    PERIPHERAL_UART2 = 0x2,
+    PERIPHERAL_ECAN  = 0x4
+} activePeripherals = PERIPHERAL_NONE;
+
 int main()
 {
     // Clock init to 80MHz for 40MIPS operation
@@ -178,7 +187,8 @@ int main()
                 //  values set to something)
                 if (params.uart2BaudRate > 0 && params.uart2Input != UART_SRC_NONE) {
 
-                    // Set up the correct UART pins based on the selected connector
+                    // Set up the correct UART pins based on the selected connector. No need to set
+                    // TRIS bits, because they default to INPUT.
                     PPSUnLock;
                     switch (params.uart2Input) {
                         case UART_SRC_BUILTIN_RECEIVE: // B13
@@ -203,6 +213,9 @@ int main()
 
                     // And initialize the UART peripheral
                     Uart2Init(params.uart2BaudRate, Uart2InterruptRoutine);
+
+                    // Update our internal state of the peripherals
+                    activePeripherals |= PERIPHERAL_UART2;
                 }
 
                 // Attempt to initialize the SD card
@@ -228,10 +241,22 @@ int main()
                 }
             }
         }
-        // Otherwise, if the card has become disconnected, show the red error LED
+        // Otherwise, if the card has become disconnected, show the red error LED and disable
+        // peripherals.
         else if (sdConnected) {
+            // Turn on the red LED
             LATAbits.LATA3 = 1;
+
+            // Update state to indicate there's no SD card available
             sdConnected = false;
+
+            // Disable peripherals. Any mapped pins will be remapped on card re-insertion, so no
+            // need to unmap them here.
+            if (activePeripherals & PERIPHERAL_UART2) {
+                Uart2Disable();
+
+                activePeripherals &= ~PERIPHERAL_UART2;
+            }
         }
     }
 }
