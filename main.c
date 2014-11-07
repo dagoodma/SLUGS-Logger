@@ -247,9 +247,6 @@ int main()
                     }
                     PPSLock;
 
-                    // And initialize the UART peripheral
-                    Uart2Init(params.uart2BaudRate, Uart2InterruptRoutine);
-
                     // Log the configuration info used when starting.
                     char x[] = "Started logging from UART2 on \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
                     size_t xLen = strlen(x);
@@ -280,6 +277,10 @@ int main()
                     xLen = strlen(x);
                     strcpy(&x[xLen], " baud.");
                     LogMetaEvent(x, (uint32_t)timerCounter);
+
+                    // And initialize the UART peripheral. We do this last to prevent filling up the
+                    // buffers while the above metadata is being written to the card.
+                    Uart2Init(params.uart2BaudRate, Uart2InterruptRoutine);
                 }
 
                 // Update status, including turning off the red LED
