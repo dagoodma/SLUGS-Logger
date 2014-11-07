@@ -199,6 +199,20 @@ int main()
                     FATAL_ERROR();
                 }
 
+                // Check for the reason that logging has started
+                if (RCONbits.POR) {
+                    LogMetaEvent("Logging after power on.", (uint32_t)timerCounter);
+                } else if (RCONbits.BOR) {
+                    LogMetaEvent("Logging after brown-out.", (uint32_t)timerCounter);
+                } else if (RCONbits.EXTR) {
+                    LogMetaEvent("Logging after being manually reset.", (uint32_t)timerCounter);
+                } else if (RCON) {
+                    LogMetaEvent("Logging after unknown event.", (uint32_t)timerCounter);
+                } else {
+                    LogMetaEvent("Logging after card insertion.", (uint32_t)timerCounter);
+                }
+                RCON = 0; // And clear all the status bits as we're done with them at this point
+
                 // Initialize the ECAN if it's been enabled in the config file
                 if (params.canBaudRate > 0) {
 
