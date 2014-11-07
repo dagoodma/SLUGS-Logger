@@ -1,0 +1,5 @@
+ * Initialize file number from scanning the SD card for appropriately-named files
+ * Add event-logging for:
+   * If data has stopped after 5s (yielding a detection threshold of 0.099KiB/s for data, a pretty low number that would be exceeded by even MAVLink HEARTBEAT messages at 2Hz.
+   * When data has started again after being stopped.
+ * Fix bug where removing the SD card doesn't disable the UART
