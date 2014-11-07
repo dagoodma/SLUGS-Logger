@@ -36,10 +36,28 @@
                           _LATA3 = 1;                                              \
                           while (1) {                                              \
                               unsigned long int i;                                 \
-                              for (i = 0; i < GetInstructionClock() / 200; ++i);    \
+                              for (i = 0; i < GetInstructionClock() / 200; ++i);   \
                               _LATA3 ^= 1;                                         \
                           }                                                        \
                       } while (0);
+
+
+/**
+ * Enter an infinite loop and flash one of the status LEDs at 10Hz. This should be used when there
+ * is an unrecoverable error onboard, like when a subsystem fails to initialize.
+ */
+#define ERROR_UNTIL_REMOVAL() do {                                                         \
+                                  _TRISA3 = 0;                                             \
+                                  _LATA3 = 1;                                              \
+                                  while (1) {                                              \
+                                      unsigned long int i;                                 \
+                                      for (i = 0; i < GetInstructionClock() / 200; ++i);   \
+                                      _LATA3 ^= 1;                                         \
+                                      if (!MDD_MediaDetect()) {                            \
+                                          break;                                           \
+                                      }                                                    \
+                                  }                                                        \
+                              } while (0);
 
 /*
  * Pic shadow register pragmas.  These set main oscillator sources, and
@@ -114,8 +132,8 @@ int main()
 	while (OSCCONbits.LOCK != 1);
     }
 
-    // Initialize EEPROM emulation library.
-    // (must be called prior to any other operation)
+    // Initialize EEPROM emulation library (must be called prior to any other operation).
+    // This is a fatal error as it's a hardware problem if it doesn't init and requires a reset.
     if (DataEEInit()) {
         FATAL_ERROR();
     }
@@ -129,6 +147,7 @@ int main()
     InitPins();
 
     // Initialize the CircularBuffer for receiving data
+    // This is a fatal error as it's a hardware problem if it doesn't init and requires a reset.
     if (!CB_Init(&circBuf, cbData, CB_SIZE)) {
         FATAL_ERROR();
     }
@@ -161,23 +180,22 @@ int main()
         if (MDD_SDSPI_MediaDetect()) {
             // If the card was just plugged in, try to reinitialize.
             if (!sdConnected) {
-                // If a card has been inserted, just wait 1ms to let things stabilize.
-                Delayms(1);
-
-                // And if we no longer detect a card, then it was just a glitch and we ignore this.
-                if (!MDD_SDSPI_MediaDetect()) {
-                    continue;
-                }
 
                 // Initialize the file system. This includes setting up all the pins and initializing
                 // the SD card, it's a big function.
                 if (!FSInit()) {
-                    FATAL_ERROR();
+                    ERROR_UNTIL_REMOVAL();
+                    LATAbits.LATA3 = 1; // Make sure we turn back on the red LED, as it may have
+                                        // been turned off by the ERROR_UNTIL_REMOVAL() macro.
+                    continue;
                 }
 
                 // Open a new log file
                 if (!OpenNewLogFile()) {
-                    FATAL_ERROR();
+                    ERROR_UNTIL_REMOVAL();
+                    LATAbits.LATA3 = 1; // Make sure we turn back on the red LED, as it may have
+                                        // been turned off by the ERROR_UNTIL_REMOVAL() macro.
+                    continue;
                 }
 
                 // Reset our timer since we opened a new log file
@@ -189,14 +207,20 @@ int main()
                 // Read the configuration from the SD card
                 ConfigParams params;
                 if (!ProcessConfigFile(&params)) {
-                    FATAL_ERROR();
+                    ERROR_UNTIL_REMOVAL();
+                    LATAbits.LATA3 = 1; // Make sure we turn back on the red LED, as it may have
+                                        // been turned off by the ERROR_UNTIL_REMOVAL() macro.
+                    continue;
                 }
 
                 // Make sure that at least one source is enabled
                 if (params.canBaudRate == 0 &&
                     (params.uart1Input == UART_SRC_NONE || params.uart1BaudRate == 0) &&
                     (params.uart2Input == UART_SRC_NONE || params.uart2BaudRate == 0)) {
-                    FATAL_ERROR();
+                    ERROR_UNTIL_REMOVAL();
+                    LATAbits.LATA3 = 1; // Make sure we turn back on the red LED, as it may have
+                                        // been turned off by the ERROR_UNTIL_REMOVAL() macro.
+                    continue;
                 }
 
                 // Check for the reason that logging has started
@@ -257,7 +281,10 @@ int main()
                             PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RP42);
                             break;
                         default:
-                            FATAL_ERROR();
+                            ERROR_UNTIL_REMOVAL();
+                            LATAbits.LATA3 = 1; // Make sure we turn back on the red LED, as it may
+                                                // have been turned off by the ERROR_UNTIL_REMOVAL()
+                                                // macro.
                     }
                     PPSLock;
 
