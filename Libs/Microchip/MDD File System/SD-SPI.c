@@ -1929,7 +1929,11 @@ unsigned char WriteSPIM( unsigned char data_out )
 #else
     BYTE   clear;
     SPIBUF = data_out;          // write byte to SSP1BUF register
-    while( !SPISTAT_RBF ); // wait until bus cycle complete
+    while( !SPISTAT_RBF ) {     // wait until bus cycle complete
+        if (!MDD_SDSPI_MediaDetect()) {
+            break;
+        }
+    }
     clear = SPIBUF;
     return ( 0 );                // return non-negative#
 #endif
@@ -1974,8 +1978,12 @@ BYTE MDD_SDSPI_ReadMedia(void)
     return SPIBUF;
 
 #else
-    SPIBUF = 0xFF;                              //Data Out - Logic ones
-    while(!SPISTAT_RBF);                     //Wait until cycle complete
+    SPIBUF = 0xFF;                              // Data Out - Logic ones
+    while(!SPISTAT_RBF) {                       // Wait until cycle complete
+        if (!MDD_SDSPI_MediaDetect()) {         // If the card was removed while trying to read, just stop trying.
+            break;
+        }
+    }
     return(SPIBUF);                             //Return with byte read
 #endif
 }
