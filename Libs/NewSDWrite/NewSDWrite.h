@@ -89,7 +89,7 @@ bool NewSDWriteSector(Sector *sector);
 /**
  * Logs a string to the metadata file.
  * @param eventString The string to log to the metadata file.
- * @param timestamp A timestamp indicating the time of the event. Seconds since Unix epoch GMT.
+ * @param timestamp A timestamp indicating the time of the event. Seconds since the start of the logfile.
  * @return True if the entire string was written.
  */
 bool LogMetaEvent(const char *eventString, uint32_t timestamp);

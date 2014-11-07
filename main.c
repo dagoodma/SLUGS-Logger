@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include <pps.h>
+#include <timer.h>
 #include <xc.h>
 
 #include "CircularBuffer.h"
@@ -71,6 +72,9 @@ static __eds__ unsigned char __attribute__((eds, space(eds))) cbData[CB_SIZE];
 // A temporary variable used for writing the buffer to the SD card
 static Sector tempSector;
 
+// Keep a running timer. This is relative to when a new file has been created.
+static float timerCounter = 0.0;
+
 // Whether the SD card is connected or not. This is different from the card select
 // pin as it is tracking the "true" state of the SD card, if it's connected and
 // initialized properly.
@@ -115,6 +119,11 @@ int main()
     if (DataEEInit()) {
         FATAL_ERROR();
     }
+
+    // Initialize Timer2 to trigger at 10Hz.
+    const uint16_t countLimit = GetInstructionClock() / 256 / 10;
+    OpenTimer2(T2_ON & T2_IDLE_CON & T2_GATE_OFF & T2_PS_1_256 & T2_32BIT_MODE_OFF & T2_SOURCE_INT, countLimit);
+    ConfigIntTimer2(T2_INT_PRIOR_4 & T2_INT_ON);
 
     // Set up the peripheral pin mappings
     InitPins();
@@ -171,6 +180,12 @@ int main()
                     FATAL_ERROR();
                 }
 
+                // Reset our timer since we opened a new log file
+                timerCounter = 0.0;
+
+                // Reset the event tracker for the most buffer usage
+                biggerCircBufSize = 0;
+
                 // Read the configuration from the SD card
                 ConfigParams params;
                 if (!ProcessConfigFile(&params)) {
@@ -202,7 +217,7 @@ int main()
                     ultoa(&x[xLen], params.canBaudRate, 10);
                     xLen = strlen(x);
                     strcpy(&x[xLen], " baud.");
-                    LogMetaEvent(x, 0);
+                    LogMetaEvent(x, (uint32_t)timerCounter);
                 }
 
                 // And configure UART2
@@ -264,7 +279,7 @@ int main()
                     ultoa(&x[xLen], params.uart2BaudRate, 10);
                     xLen = strlen(x);
                     strcpy(&x[xLen], " baud.");
-                    LogMetaEvent(x, 0);
+                    LogMetaEvent(x, (uint32_t)timerCounter);
                 }
 
                 // Update status, including turning off the red LED
@@ -285,7 +300,7 @@ int main()
                     ultoa(&x[xLen], circBuf.dataSize / DATA_PER_SECTOR, 10);
                     xLen = strlen(x);
                     strcpy(&x[xLen], " sectors.");
-                    LogMetaEvent(x, 0);
+                    LogMetaEvent(x, (uint32_t)timerCounter);
                     biggerCircBufSize = circBuf.dataSize;
                 }
 
@@ -350,4 +365,12 @@ static void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
     // Write this data to our circular buffer. We use the fail early mode to make
     // sure the buffer is always only full of an integer number of sectors
     CB_WriteMany(&circBuf, Buffer, BufferSize, true);
+}
+
+void _ISR _T2Interrupt(void)
+{
+    timerCounter += 0.1;
+
+    // Clear the interrupt flag
+    IFS0bits.T2IF = 0;
 }
