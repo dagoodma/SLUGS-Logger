@@ -2436,7 +2436,7 @@ MEDIA_INFORMATION *  MDD_SDSPI_MediaInitialize(void)
 		
 		//Now send CMD55/ACMD41 in a loop, until the card is finished with its internal initialization.
 		//Note: SD card specs recommend >= 1 second timeout while waiting for ACMD41 to signal non-busy.
-		for(timeout = 0; timeout < 0xFFFF; timeout++)
+		for(timeout = 0; timeout < 0x1000; timeout++)
 		{				
 			//Send CMD55 (lets SD card know that the next command is application specific (going to be ACMD41)).
 			SendMediaSlowCmd(APP_CMD, 0x00000000);
@@ -2458,7 +2458,7 @@ MEDIA_INFORMATION *  MDD_SDSPI_MediaInitialize(void)
 				break;  //Break out of for() loop.  Card is finished initializing.
             }				
 		}		
-		if(timeout >= 0xFFFF)
+		if(timeout >= 0x1000)
 		{
             #ifdef __DEBUG_UART  
             PrintROMASCIIStringUART("Media Timeout on CMD55/ACMD41.\r\n");
