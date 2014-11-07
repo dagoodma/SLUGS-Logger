@@ -53,9 +53,10 @@ extern BYTE gNeedDataWrite;
 static uint8_t Checksum(uint8_t *data, int dataSize);
 static bool NewAllocateMultiple(FSFILE *fo);
 void Uint16ToHex(uint16_t x, char out[5]);
+void CloseLogFile(void);
 
-static FSFILE *metaFilePointer; // A pointer to the current log file
-static FSFILE *logFilePointer; // A pointer to the current log file
+static FSFILE *metaFilePointer = NULL; // A pointer to the current log file
+static FSFILE *logFilePointer = NULL; // A pointer to the current log file
 static DWORD lastCluster; // The last cluster number used for the current log file
 static uint16_t fileNumber; // The current log number file. Stored in EEPROM.
 
@@ -83,6 +84,9 @@ bool OpenNewLogFile(void)
         DataEEWrite(++fileNumber, EE_ADDRESS);
     }
 
+    // If either the metadata or log file are already open, close them before opening new ones.
+    CloseLogFile();
+
     // Open a new meta file
     char metaFileName[] = "0000.meta";
     Uint16ToHex(fileNumber, metaFileName);
@@ -108,6 +112,22 @@ bool OpenNewLogFile(void)
     NewAllocateMultiple(logFilePointer);
 
     return true;
+}
+
+/**
+ * Close the log and metadata file. This should be done before calling OpenNewLogFile() again to
+ * prevent running out of file descriptors.
+ */
+void CloseLogFile(void)
+{
+    if (metaFilePointer) {
+        FSfclose(metaFilePointer);
+        metaFilePointer = NULL;
+    }
+    if (logFilePointer) {
+        FSfclose(logFilePointer);
+        logFilePointer = NULL;
+    }
 }
 
 bool ProcessConfigFile(ConfigParams *params)
