@@ -261,6 +261,9 @@ int main()
                     }
                     PPSLock;
 
+                    // Update our internal state of the peripherals
+                    activePeripherals |= PERIPHERAL_UART2;
+
                     // Log the configuration info used when starting.
                     char x[] = "Started logging from UART2 on \0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
                     size_t xLen = strlen(x);
