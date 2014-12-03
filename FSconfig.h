@@ -78,7 +78,7 @@
 // Summary: A macro to enable/disable format functionality
 // Description: The ALLOW_FORMATS definition can be commented out to disable formatting functionality.  This will prevent the use of
 //              the FSformat function.  If formats are enabled, write operations must also be enabled by uncommenting ALLOW_WRITES.
-#define ALLOW_FORMATS
+//#define ALLOW_FORMATS
 
 // Summary: A macro to enable/disable directory operations.
 // Description: The ALLOW_DIRS definition can be commented out to disable all directory functionality.  This will reduce code size.
