@@ -69,23 +69,20 @@ static uint16_t fileNumber; // The current log number file. Stored in EEPROM.
  * TODO: Allocate appropriate file size for new entry
  * @return Buad rate extracted from the config file or 0 if invalid
  */
-bool OpenNewLogFile(void)
+uint16_t OpenNewLogFile(uint16_t lastFileNumber)
 {
-    // Read EEPROM to find next file name.
-    fileNumber = DataEERead(EE_ADDRESS);
-    if (fileNumber == 0xFFFF) {
-        // If no file number was found (all FFFFs, then use 0 to start.
-        fileNumber = 0;
-        DataEEWrite(0x00, EE_ADDRESS);
-    } else {
-        // TODO CORRECT THE LAST FILE SIZE HERE
-
-        // Otherwise we have a valid file number, so let's start using the next one.
-        DataEEWrite(++fileNumber, EE_ADDRESS);
-    }
-
     // If either the metadata or log file are already open, close them before opening new ones.
     CloseLogFile();
+
+    // Save the file number we're using. We make sure to skip 0xFFFF, as that's an invalid number in
+    // the EEPROM, and we wouldn't be able to differentiate from a good log file with that name and
+    // no saved log file.
+    if (lastFileNumber == INVALID_LOG_NUMBER || lastFileNumber == INVALID_LOG_NUMBER - 1) {
+        fileNumber = 0;
+    } else {
+        fileNumber = lastFileNumber + 1;
+    }
+    DataEEWrite(fileNumber, EE_ADDRESS);
 
     // Open a new meta file
     char metaFileName[] = "0000.meta";
@@ -93,7 +90,7 @@ bool OpenNewLogFile(void)
     metaFileName[4] = '.'; // Re-add the period that was overwritten by the NUL-terminating character in Uint16ToHex()
     metaFilePointer = FSfopen(metaFileName, FS_WRITE);
     if (!metaFilePointer) {
-        return false;
+        return INVALID_LOG_NUMBER;
     }
 
     // Open a new log file
@@ -102,7 +99,7 @@ bool OpenNewLogFile(void)
     logFileName[4] = '.'; // Re-add the period that was overwritten by the NUL-terminating character in Uint16ToHex()
     logFilePointer = FSfopen(logFileName, FS_WRITE);
     if (!logFilePointer) {
-        return false;
+        return INVALID_LOG_NUMBER;
     }
 
     // Initialize data for NewSDWriteSector
@@ -111,7 +108,13 @@ bool OpenNewLogFile(void)
     // Allocate some clusters
     NewAllocateMultiple(logFilePointer);
 
-    return true;
+    return fileNumber;
+}
+
+uint16_t GetLastLogNumberFromEeprom(void)
+{
+    // Read EEPROM to find next file name.
+    return DataEERead(EE_ADDRESS);
 }
 
 /**

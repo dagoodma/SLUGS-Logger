@@ -191,7 +191,8 @@ int main()
                 }
 
                 // Open a new log file
-                if (!OpenNewLogFile()) {
+                uint16_t lastLogFileNumber = GetLastLogNumberFromEeprom();
+                if (!OpenNewLogFile(lastLogFileNumber)) {
                     ERROR_UNTIL_REMOVAL();
                     LATAbits.LATA3 = 1; // Make sure we turn back on the red LED, as it may have
                                         // been turned off by the ERROR_UNTIL_REMOVAL() macro.

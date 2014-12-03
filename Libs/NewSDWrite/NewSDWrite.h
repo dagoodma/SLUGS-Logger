@@ -15,6 +15,9 @@
 #define FOOTER_TAG 0x2425 // '%$'
 #define EE_ADDRESS 0x01
 
+// The largest UINT16 number is reserved as an invalid log number, mostly for easy use with the EEPROM.
+#define INVALID_LOG_NUMBER (UINT16_MAX)
+
 // a struct to combine data with a header and footer
 typedef struct {
     uint16_t headerTag;
@@ -56,12 +59,19 @@ typedef struct {
 } ConfigParams;
 
 /**
- * Initalizes filesystems and returns a file structure for use with
- * NewSDWriteSector.
- * @param filename A string with the filename (name.ext)
- * @return Whether opening the log file succeeded or failed
+ * Opens a new log/meta file pair with an appropriate file number.
+ *
+ * @param lastFileNumber The last file number used.
+ * @return The new log file number or INVALID_LOG_NUMBER if error.
  */
-bool OpenNewLogFile();
+uint16_t OpenNewLogFile(uint16_t lastFileNumber);
+
+/**
+ * Returns the last log number used in the EEPROM.
+ *
+ * @returns The last log number or INVALID_LOG_NUMBER if error or not found.
+ */
+uint16_t GetLastLogNumberFromEeprom(void);
 
 /**
  * Process the configuration file on the current SD card. Assumes all hardware is
