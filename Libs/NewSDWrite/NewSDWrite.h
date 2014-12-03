@@ -74,6 +74,13 @@ uint16_t OpenNewLogFile(uint16_t lastFileNumber);
 uint16_t GetLastLogNumberFromEeprom(void);
 
 /**
+ * Returns the largest log number that's in the root directory of the card.
+ *
+ * @return The biggest log number on the card or INVALID_LOG_NUMBER if none are found.
+ */
+uint16_t GetLastLogNumberFromCard(void);
+
+/**
  * Process the configuration file on the current SD card. Assumes all hardware is
  * initialized and the filesystem is ready for reading
  * @param params The struct to return the parameter values into.

@@ -143,6 +143,7 @@ int main()
     OpenTimer2(T2_ON & T2_IDLE_CON & T2_GATE_OFF & T2_PS_1_256 & T2_32BIT_MODE_OFF & T2_SOURCE_INT, countLimit);
     ConfigIntTimer2(T2_INT_PRIOR_4 & T2_INT_ON);
 
+
     // Set up the peripheral pin mappings
     InitPins();
 
@@ -190,8 +191,8 @@ int main()
                     continue;
                 }
 
-                // Open a new log file
-                uint16_t lastLogFileNumber = GetLastLogNumberFromEeprom();
+                // Open a new log file, attemping to select a number based on what's on the SD card
+                uint16_t lastLogFileNumber = GetLastLogNumberFromCard();
                 if (!OpenNewLogFile(lastLogFileNumber)) {
                     ERROR_UNTIL_REMOVAL();
                     LATAbits.LATA3 = 1; // Make sure we turn back on the red LED, as it may have

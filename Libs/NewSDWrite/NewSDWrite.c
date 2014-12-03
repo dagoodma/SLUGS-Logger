@@ -117,6 +117,28 @@ uint16_t GetLastLogNumberFromEeprom(void)
     return DataEERead(EE_ADDRESS);
 }
 
+uint16_t GetLastLogNumberFromCard(void)
+{
+    SearchRec r;
+    if (FindFirst("????.log", ATTR_MASK, &r) == 0) {
+        uint16_t lastLog = 0x0000;
+        do {
+            // Decode the current filename into a log number, saving it if it's the largest found.
+            uint16_t logNum;
+            if (HexToUint16(r.filename, &logNum)) {
+                if (logNum > lastLog) {
+                    lastLog = logNum;
+                }
+            }
+
+        } while (FindNext(&r) == 0);
+
+        return lastLog;
+    } else {
+        return INVALID_LOG_NUMBER;
+    }
+}
+
 /**
  * Close the log and metadata file. This should be done before calling OpenNewLogFile() again to
  * prevent running out of file descriptors.
