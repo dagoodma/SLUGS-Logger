@@ -140,12 +140,14 @@ bool ProcessConfigFile(ConfigParams *params)
 
     // If the config file is empty or huge (1k), we assume the file is invalid.
     if (configFile->size == 0 || configFile->size > MAX_CONFIG_FILE_SIZE) {
+        FSfclose(configFile);
         return false;
     }
 
     // Grab the entire file into an array for processing.
     char fileText[configFile->size + 2];
     const size_t bytesRead = FSfread(fileText, sizeof(char), configFile->size, configFile);
+    FSfclose(configFile); // No need to keep the file open any longer
     fileText[bytesRead] = '\n'; // Make sure it's newline-terminated
     fileText[bytesRead + 1] = '\0'; // And also a proper C-style string
 
