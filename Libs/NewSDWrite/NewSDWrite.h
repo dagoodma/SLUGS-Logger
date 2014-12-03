@@ -94,4 +94,23 @@ bool NewSDWriteSector(Sector *sector);
  */
 bool LogMetaEvent(const char *eventString, uint32_t timestamp);
 
+/**
+ * Convert a uint16 integer to a 4-character NUL-terminated string.
+ * @see HexToUint16
+ *
+ * @param in The uint16 to convert
+ * @param out An output 4-character string, NUL-terminated
+ */
+void Uint16ToHex(uint16_t in, char out[5]);
+
+/**
+ * Convert a 4-character hex string (no NUL-terminator required) to a uint16 integer.
+ * @see Uint16ToHex
+ *
+ * @param in The 4 hex characters.
+ * @param out The converted number. Output is undetermined if conversion fails.
+ * @return If the string was successfully converted
+ */
+bool HexToUint16(const char in[4], uint16_t *out);
+
 #endif

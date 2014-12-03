@@ -52,8 +52,8 @@ extern BYTE gNeedDataWrite;
 // Internal functions
 static uint8_t Checksum(uint8_t *data, int dataSize);
 static bool NewAllocateMultiple(FSFILE *fo);
-void Uint16ToHex(uint16_t x, char out[5]);
 void CloseLogFile(void);
+bool Hex2Nibble(char in, uint8_t *out);
 
 static FSFILE *metaFilePointer = NULL; // A pointer to the current log file
 static FSFILE *logFilePointer = NULL; // A pointer to the current log file
@@ -404,4 +404,49 @@ void Uint16ToHex(uint16_t x, char out[5])
    out[1] = hexDigits[(x >> 8) & 0xF];
    out[0] = hexDigits[(x >> 12) & 0xF];
    out[4] = '\0';
+}
+
+bool Hex2Nibble(char in, uint8_t *out)
+{
+    if ('a' <= in && in <= 'f') {
+        *out = in - 'a' + 0xA;
+        return true;
+    } else if ('A' <= in && in <= 'F') {
+        *out = in - 'A' + 0xA;
+        return true;
+    } else if ('0' <= in && in <= '9') {
+        *out = in - '0';
+        return true;
+    }
+
+    return false;
+}
+
+bool HexToUint16(const char in[4], uint16_t *out)
+{
+    *out = 0x0000;
+    uint8_t nibble;
+
+    if (Hex2Nibble(in[3], &nibble)) {
+        *out |= nibble;
+    } else {
+        return false;
+    }
+    if (Hex2Nibble(in[2], &nibble)) {
+        *out |= nibble << 4;
+    } else {
+        return false;
+    }
+    if (Hex2Nibble(in[1], &nibble)) {
+        *out |= nibble << 8;
+    } else {
+        return false;
+    }
+    if (Hex2Nibble(in[0], &nibble)) {
+        *out |= nibble << 12;
+    } else {
+        return false;
+    }
+
+    return true;
 }
