@@ -12,7 +12,6 @@
 #include "Node.h"
 #include "Uart2.h"
 
-#include "DEE/DEE Emulation 16-bit.h"
 #include "Microchip/Include/MDD File System/FSIO.h"
 
 // The configuration file cannot be bigger than this (in bytes)
@@ -82,7 +81,6 @@ uint16_t OpenNewLogFile(uint16_t lastFileNumber)
     } else {
         fileNumber = lastFileNumber + 1;
     }
-    DataEEWrite(fileNumber, EE_ADDRESS);
 
     // Open a new meta file
     char metaFileName[] = "0000.meta";
@@ -109,12 +107,6 @@ uint16_t OpenNewLogFile(uint16_t lastFileNumber)
     NewAllocateMultiple(logFilePointer);
 
     return fileNumber;
-}
-
-uint16_t GetLastLogNumberFromEeprom(void)
-{
-    // Read EEPROM to find next file name.
-    return DataEERead(EE_ADDRESS);
 }
 
 uint16_t GetLastLogNumberFromCard(void)

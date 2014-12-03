@@ -67,13 +67,6 @@ typedef struct {
 uint16_t OpenNewLogFile(uint16_t lastFileNumber);
 
 /**
- * Returns the last log number used in the EEPROM.
- *
- * @returns The last log number or INVALID_LOG_NUMBER if error or not found.
- */
-uint16_t GetLastLogNumberFromEeprom(void);
-
-/**
  * Returns the largest log number that's in the root directory of the card.
  *
  * @return The biggest log number on the card or INVALID_LOG_NUMBER if none are found.

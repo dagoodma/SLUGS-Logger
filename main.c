@@ -17,7 +17,6 @@
 #include "Uart2.h"
 
 #include "MDD File System/FSIO.h" // This must come before the DEE file because the ERASE macro is overloaded
-#include "DEE/DEE Emulation 16-bit.h"
 #include "NewSDWrite/NewSDWrite.h"
 
 // The sector size of the SD card in bytes
@@ -132,12 +131,6 @@ int main()
 	while (OSCCONbits.LOCK != 1);
     }
 
-    // Initialize EEPROM emulation library (must be called prior to any other operation).
-    // This is a fatal error as it's a hardware problem if it doesn't init and requires a reset.
-    if (DataEEInit()) {
-        FATAL_ERROR();
-    }
-
     // Initialize Timer2 to trigger at 10Hz.
     const uint16_t countLimit = GetInstructionClock() / 256 / 10;
     OpenTimer2(T2_ON & T2_IDLE_CON & T2_GATE_OFF & T2_PS_1_256 & T2_32BIT_MODE_OFF & T2_SOURCE_INT, countLimit);
@@ -193,7 +186,7 @@ int main()
 
                 // Open a new log file, attemping to select a number based on what's on the SD card
                 uint16_t lastLogFileNumber = GetLastLogNumberFromCard();
-                if (!OpenNewLogFile(lastLogFileNumber)) {
+                if (OpenNewLogFile(lastLogFileNumber) == INVALID_LOG_NUMBER) {
                     ERROR_UNTIL_REMOVAL();
                     LATAbits.LATA3 = 1; // Make sure we turn back on the red LED, as it may have
                                         // been turned off by the ERROR_UNTIL_REMOVAL() macro.
