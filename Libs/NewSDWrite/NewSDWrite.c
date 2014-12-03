@@ -138,13 +138,6 @@ bool ProcessConfigFile(ConfigParams *params)
         return false;
     }
 
-    // Fill the params struct with nice defaults
-    params->uart1BaudRate = 0;
-    params->uart1Input = UART_SRC_NONE;
-    params->uart2BaudRate = 0;
-    params->uart2Input = UART_SRC_NONE;
-    params->canBaudRate = 0;
-
     // If the config file is empty or huge (1k), we assume the file is invalid.
     if (configFile->size == 0 || configFile->size > MAX_CONFIG_FILE_SIZE) {
         return false;
@@ -155,6 +148,13 @@ bool ProcessConfigFile(ConfigParams *params)
     const size_t bytesRead = FSfread(fileText, sizeof(char), configFile->size, configFile);
     fileText[bytesRead] = '\n'; // Make sure it's newline-terminated
     fileText[bytesRead + 1] = '\0'; // And also a proper C-style string
+
+    // Fill the params struct with nice defaults
+    params->uart1BaudRate = 0;
+    params->uart1Input = UART_SRC_NONE;
+    params->uart2BaudRate = 0;
+    params->uart2Input = UART_SRC_NONE;
+    params->canBaudRate = 0;
 
     // We track the start and end of each line and iterate until we run off the end of it.
     char *endOfLine = strchr(fileText, '\n');
