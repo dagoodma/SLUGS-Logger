@@ -241,6 +241,10 @@ int main()
                     PPSInput(IN_FN_PPS_C1RX, IN_PIN_PPS_RP20);
                     PPSLock;
 
+                    // Set the TRIS bits properly for ECAN1 as well.
+                    _TRISB7 = 0;
+                    _TRISB4 = 1;
+
                     // Update our internal state of the peripherals
                     activePeripherals |= PERIPHERAL_ECAN;
 
@@ -262,18 +266,23 @@ int main()
                     switch (params.uart2Input) {
                         case UART_SRC_BUILTIN_RECEIVE: // B13
                             PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RPI45);
+                            _TRISB13 = 1;
                             break;
                         case UART_SRC_CONN1_TRANSMIT: // B15
                             PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RPI47);
+                            _TRISB15 = 1;
                             break;
                         case UART_SRC_CONN1_RECEIVE: // B12
                             PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RPI44);
+                            _TRISB12 = 1;
                             break;
                         case UART_SRC_CONN2_TRANSMIT: // B1
                             PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RPI33);
+                            _TRISB1 = 1;
                             break;
                         case UART_SRC_CONN2_RECEIVE: // B10
                             PPSInput(IN_FN_PPS_U2RX, IN_PIN_PPS_RP42);
+                            _TRISB10 = 1;
                             break;
                         default:
                             ERROR_UNTIL_REMOVAL();
@@ -377,15 +386,17 @@ int main()
  */
 static void InitPins(void)
 {
-    // And configure the Peripheral Pin Select pins:
+    // And configure the Peripheral Pin Select pins to enable SPI2: clock (B9), out (B8), in (B14)
     PPSUnLock;
-
-    // enable the SPI stuff: clock (B9), out (B8), in (B14)
     PPSOutput(OUT_FN_PPS_SCK2, OUT_PIN_PPS_RP41);
     PPSOutput(OUT_FN_PPS_SDO2, OUT_PIN_PPS_RP40);
     PPSInput(IN_FN_PPS_SDI2, IN_PIN_PPS_RPI46);
-
     PPSLock;
+
+    // And enable the TRIS pins for SPI2
+    _TRISB9 = 0;
+    _TRISB8 = 0;
+    _TRISB14 = 1;
 
     // And enable both the LED pins as outputs
     _TRISA3 = 0; // Red LED
