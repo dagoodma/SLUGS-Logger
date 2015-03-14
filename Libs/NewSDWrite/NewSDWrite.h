@@ -123,4 +123,10 @@ void Uint16ToHex(uint16_t in, char out[5]);
  */
 bool HexToUint16(const char in[4], uint16_t *out);
 
+/**
+ * Returns the size of a single sector for the current loaded filesystem.
+ * @return The size of a single sector in bytes
+ */
+DWORD GetSectorSize(void);
+
 #endif

@@ -47,6 +47,7 @@ BYTE Write_File_Entry(FILEOBJ fo, WORD *curEntry);
 BYTE flushData (void);
 extern BYTE gNeedFATWrite;
 extern BYTE gNeedDataWrite;
+extern DISK gDiskData; // A global datastore for storing disk information. Populated by FSInit().
 
 // Internal functions
 static uint8_t Checksum(uint8_t *data, int dataSize);
@@ -388,6 +389,11 @@ bool NewFileUpdate(FSFILE *fo)
     Write_File_Entry(fo, &fHandle);
 
     return true;
+}
+
+DWORD GetSectorSize(void)
+{
+    return gDiskData.sectorSize;
 }
 
 /**

@@ -184,6 +184,12 @@ int main()
                     continue;
                 }
 
+                // Currently only systems with a 512b sector size are supported so error out if
+                // that's not what we find.
+                if (GetSectorSize() != BYTES_PER_SECTOR) {
+                    ERROR_UNTIL_REMOVAL();
+                }
+
                 // Open a new log file, attemping to select a number based on what's on the SD card
                 uint16_t lastLogFileNumber = GetLastLogNumberFromCard();
                 if (OpenNewLogFile(lastLogFileNumber) == INVALID_LOG_NUMBER) {
