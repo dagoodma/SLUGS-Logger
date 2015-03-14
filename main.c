@@ -78,6 +78,7 @@ _FICD(JTAGEN_OFF & ICS_PGD2);
 // Function prototypes for the helper functions below main
 static void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize);
 static void InitPins(void);
+void SetStatusModeLed(void);
 
 // Function prototypes for SD-SPI.c
 void Delayms(BYTE milliseconds);
@@ -91,6 +92,18 @@ static Sector tempSector;
 
 // Keep a running timer. This is relative to when a new file has been created.
 static float timerCounter = 0.0;
+
+// Track the time since data was last receiving from the circular buffer. In units of .1s.
+static uint8_t timeSinceLastData = 0;
+
+// Set a cutoff for when the system considers itself "not receiving data". 1 second seems pretty
+// reasonable to receive 512b. In units of .1s.
+#define DATA_TIMEOUT 10
+
+// Flag indicating if the system is currently receiving data. Should be pretty accurate when data is
+// being received, but a little slow to respond when the data flow has stopped.
+// @see DATA_TIMEOUT timeSinceLastData
+static bool receivingData = false;
 
 // Whether the SD card is connected or not. This is different from the card select
 // pin as it is tracking the "true" state of the SD card, if it's connected and
@@ -161,14 +174,6 @@ int main()
 
     // Main event loop
     while (true) {
-
-        // Turn back on the amber status LED after the TIMEOUT counter has
-        // expired.
-        if (ledCounter == 0) {
-            _LATA4 = 1;
-        } else {
-            --ledCounter;
-        }
 
         // If a card exists...
         if (MDD_SDSPI_MediaDetect()) {
@@ -416,8 +421,8 @@ static void InitPins(void)
 static void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
 {
     // Turn off the amber LED, indicating that we're receiving data
-    _LATA4 = 0;
-    ledCounter = AMBER_LED_TIMEOUT;
+    receivingData = true;
+    timeSinceLastData = 0;
 
     // Write this data to our circular buffer. We use the fail early mode to make
     // sure the buffer is always only full of an integer number of sectors
@@ -426,8 +431,42 @@ static void Uart2InterruptRoutine(unsigned char *Buffer, int BufferSize)
 
 void _ISR _T2Interrupt(void)
 {
+    // Track the uptime of the system. Used for logging.
     timerCounter += 0.1;
+
+    // See if we haven't received new data in a while and update the system state accordingly.
+    if (timeSinceLastData >= DATA_TIMEOUT) {
+        receivingData = false;
+    } else {
+        ++timeSinceLastData;
+    }
+
+    // Blink the amber status LED
+    SetStatusModeLed();
 
     // Clear the interrupt flag
     IFS0bits.T2IF = 0;
+}
+
+/**
+ * Blink the status LED at 1Hz when on and initialized and at 2Hz when receiving data. This function
+ * assumes it's being called at 10Hz.
+ */
+void SetStatusModeLed(void)
+{
+    // Keep a variable here for scaling the 4Hz timer to a 1Hz timer.
+    static uint8_t timerCounter = 0;
+
+    // Check if it's time to toggle the status LED. The limit is decided based on whether HIL is
+    // active and if the rudder is detected.
+    uint8_t countLimit;
+    if (sdConnected && receivingData) {
+        countLimit = 4; // Set to 2Hz
+    } else {
+        countLimit = 9; // Set to 1Hz
+    }
+    if (++timerCounter >= countLimit) {
+        _LATA4 ^= 1;
+        timerCounter = 0;
+    }
 }
