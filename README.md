@@ -75,7 +75,7 @@ Testing can be easily performed by using a suitable computer or other UART data 
 The config file should be located on the target SD card and named "config.txt". Configurations are set with a keyword and an integer value for the desired setting. Possible options are:
 
 UARTx_BAUD - This parameter enables logging on the UART1 peripheral. Valid values are from 9600 through 115200. (x can be 1 or 2)
-UARTx_INPUT - This parameter specifies where the input data stream is coming from. Valid values are [BUILTIN_TX, BUILTIN_RX, CONN1_RX, CONN1_TX, CONN2_RX, CONN2_TX]. See the hardware you're using to see which pins map to which connectors.
+UARTx_INPUT - This parameter specifies where the input data stream is coming from. Valid values are [BUILTIN_RX, CONN1_TX, CONN1_RX, CONN2_TX, CONN2_RX]. See the hardware you're using to see which pins map to which connectors.
 
 CAN_BAUD - This parameter controls the CAN baud rate. Right now the only valid option is 250000.
 

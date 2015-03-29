@@ -34,6 +34,7 @@ for f in sys.argv[1:]:
 
         # Main loop, reading file by sectors and processing each of them.
         nextSector = slog.read(512)
+        nextSector = bytearray(nextSector) # Always cast to a bytearray so this is Python2 & 3 compatible
         fileNumber = nextSector[FILE_NUMBER_POS]
         sectorNumber = 0
         error = False
@@ -64,5 +65,6 @@ for f in sys.argv[1:]:
             outlog.write(nextSector[HEADER_LEN:-FOOTER_LEN])
             sectorNumber += 1
             nextSector = slog.read(512)
+            nextSector = bytearray(nextSector) # Always cast to a bytearray so this is Python2 & 3 compatible
 
         print("Decoded {} bytes into '{}'.".format((sectorNumber + 1) * 506, f_out))
