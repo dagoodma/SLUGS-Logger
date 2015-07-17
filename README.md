@@ -32,6 +32,26 @@ More specifically, the Slogger was designed to meet these requirements:
   * Data checksums
 * Robust to power/card errors
   * Ensure file system integrity even when card errors out at most inopportune moments. (i.e., a cluster update)
+  
+## Hardware ##
+The SLUGS Logger was redesigned to fit onto a compact PCB that includes UART and optional CAN connections. See the schematic in `docs/SLogger_rev5.pdf`. Below are lists of components required to assemble the PCB. Also see `docs/slugs_logger_board_layout.png` for a sketch of the board layout with components labelled.
+
+### IC Components ###
+* 1A LDO - MCP1826-SOT22305
+* [Optional CAN Controller - MCP2551-SO08]
+* PIC uController - DSPIC33FJ802GP-28-SOIC28-W
+* Micro-SD-Socket-PP: USD-SOCKETNEW
+
+### Discrete Components ###
+* D1: ?
+* LED1: red
+* LED2: amber
+* R1: 100 kOhm
+* R2, R3: 330 Ohm
+* C1, C2, C3: 4.7 uF
+* C4, C6: 1 uF
+* C8: 10 uF
+* C9, C10: 0.1uF
 
 ## Code ##
 ### Overview ###
